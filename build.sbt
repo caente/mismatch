@@ -27,6 +27,6 @@ scalacOptions ++= Seq(
         "-Xmax-classfile-name",
         "128",
         "-language:existentials",
-        "-language:experimental.macros"
-        //"-Xlog-implicits"
+        "-language:experimental.macros",
+        "-Xlog-implicits"
       )

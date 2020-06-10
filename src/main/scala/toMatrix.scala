@@ -8,8 +8,32 @@ object paths {
   import scala.language.implicitConversions
   import simulacrum._
 
+  sealed trait Path {
+    def append(o: Path ): Path
+  }
+  object Path {
+    def empty: Path = Empty
+  }
+  case class Node(children: Set[Path], tag: Symbol ) extends Path {
+    def append(o: Path ): Path =
+      o match {
+        case Empty => this
+        case _     => Node( children + o, tag )
+      }
+  }
+  case class End(tag: Symbol ) extends Path {
+    def append(o: Path ): Path =
+      o match {
+        case Empty => this
+        case _     => Node( Set( o ), tag )
+      }
+  }
+  case object Empty extends Path {
+    def append(o: Path ): Path = o
+  }
+
   @typeclass trait ExtractPaths[C] {
-    def extractPaths(c: C ): List[Symbol]
+    def extractPaths(c: C ): Path
   }
 
   @typeclass trait Leaf[A] {
@@ -19,11 +43,11 @@ object paths {
   trait ExtractPathsLow {
     implicit def leaf[K <: Symbol, L](implicit key: Witness.Aux[K], L: ExtractPaths[L] ): ExtractPaths[FieldType[K, L]] =
       new ExtractPaths[FieldType[K, L]] {
-        def extractPaths(c: FieldType[K, L] ) = List( key.value ) ::: L.extractPaths( c )
+        def extractPaths(c: FieldType[K, L] ) = End( key.value ).append( L.extractPaths( c ) )
       }
     implicit def optionLeaf[L, K <: Symbol](implicit key: Witness.Aux[K] ): ExtractPaths[FieldType[K, Option[L]]] =
       new ExtractPaths[FieldType[K, Option[L]]] {
-        def extractPaths(cs: FieldType[K, Option[L]] ): List[Symbol] = cs.map( _ => key.value ).toList
+        def extractPaths(cs: FieldType[K, Option[L]] ) = cs.map( _ => End( key.value ) ).foldLeft( Path.empty )( _ append _ )
       }
     implicit def hconsLeaf[K <: Symbol, H, T <: HList](
         implicit
@@ -31,40 +55,30 @@ object paths {
         tail: ExtractPaths[T]
       ): ExtractPaths[FieldType[K, H] :: T] =
       new ExtractPaths[FieldType[K, H] :: T] {
-        def extractPaths(c: FieldType[K, H] :: T ) = key.value :: tail.extractPaths( c.tail )
-      }
-    implicit def list[K <: Symbol, L](implicit key: Witness.Aux[K], L: ExtractPaths[L] ): ExtractPaths[FieldType[K, List[L]]] =
-      new ExtractPaths[FieldType[K, List[L]]] {
-        def extractPaths(c: FieldType[K, List[L]] ) = c.flatMap( L.extractPaths )
-      }
+        implicit def hnil: ExtractPaths[HNil] = new ExtractPaths[HNil] { def extractPaths(c: HNil ) = Path.empty }
+        implicit def cnil: ExtractPaths[CNil] = new ExtractPaths[CNil] { def extractPaths(c: CNil ) = Path.empty }
+        implicit def hcons[K <: Symbol, H, T <: HList](
+            implicit
+            key: Witness.Aux[K],
+            head: ExtractPaths[FieldType[K, H]],
+            tail: ExtractPaths[T]
+          ): ExtractPaths[FieldType[K, H] :: T] =
+          new ExtractPaths[FieldType[K, H] :: T] {
+            def extractPaths(c: FieldType[K, H] :: T ) = head.extractPaths( c.head ).append( tail.extractPaths( c.tail ) )
+          }
 
-  }
-  object ExtractPaths extends ExtractPathsLow {
-    implicit def generic[A, G](implicit gen: LabelledGeneric.Aux[A, G], sg: Lazy[ExtractPaths[G]] ): ExtractPaths[A] =
-      new ExtractPaths[A] {
-        def extractPaths(a: A ) = sg.value.extractPaths( gen.to( a ) )
-      }
-    implicit def hnil: ExtractPaths[HNil] = new ExtractPaths[HNil] { def extractPaths(c: HNil ): List[Symbol] = Nil }
-    implicit def cnil: ExtractPaths[CNil] = new ExtractPaths[CNil] { def extractPaths(c: CNil ): List[Symbol] = Nil }
+        implicit def leafList[K <: Symbol, L](implicit key: Witness.Aux[K], L: Leaf[L] ): ExtractPaths[FieldType[K, List[L]]] =
+          new ExtractPaths[FieldType[K, List[L]]] {
+            def extractPaths(c: FieldType[K, List[L]] ) = {
+              c.map( c => End( L.leaf( c ) ) ).foldLeft( Path.empty )( _ append _ )
+            }
+          }
 
-    implicit def hcons[K <: Symbol, H, T <: HList](
-        implicit
-        key: Witness.Aux[K],
-        head: ExtractPaths[FieldType[K, H]],
-        tail: ExtractPaths[T]
-      ): ExtractPaths[FieldType[K, H] :: T] =
-      new ExtractPaths[FieldType[K, H] :: T] {
-        def extractPaths(c: FieldType[K, H] :: T ) = head.extractPaths( c.head ) ::: tail.extractPaths( c.tail )
-      }
-
-    implicit def leafList[K <: Symbol, L](implicit key: Witness.Aux[K], L: Leaf[L] ): ExtractPaths[FieldType[K, List[L]]] =
-      new ExtractPaths[FieldType[K, List[L]]] {
-        def extractPaths(c: FieldType[K, List[L]] ) = c.map( L.leaf )
-      }
-
-    implicit def option[L, K <: Symbol](implicit key: Witness.Aux[K], L: ExtractPaths[L] ): ExtractPaths[FieldType[K, Option[L]]] =
-      new ExtractPaths[FieldType[K, Option[L]]] {
-        def extractPaths(cs: FieldType[K, Option[L]] ): List[Symbol] = cs.toList.map( _ => key.value ) ::: cs.toList.flatMap( L.extractPaths )
+        implicit def option[L, K <: Symbol](implicit key: Witness.Aux[K], L: ExtractPaths[L] ): ExtractPaths[FieldType[K, Option[L]]] =
+          new ExtractPaths[FieldType[K, Option[L]]] {
+            def extractPaths(cs: FieldType[K, Option[L]] ) =
+              (cs.toList.map( _ => End( key.value ) ) ::: cs.toList.map( L.extractPaths )).foldLeft( Path.empty )( _ append _ )
+          }
       }
   }
 }
