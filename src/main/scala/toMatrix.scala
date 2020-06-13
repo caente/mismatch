@@ -6,22 +6,39 @@ object paths {
   import labelled._
   import ops.record._
   import scala.language.implicitConversions
+  import scala.language.higherKinds
   import simulacrum._
 
-  sealed trait Path {
-    def append(o: Path ): Path
+  trait HasChildren[N[_], C] {
+    def children[A](node: N[A] ): Set[N[C]]
+  }
+  trait HasParent[N[_], P] {
+    def parent[A](node: N[A] ): N[P]
+  }
+  trait Path[N[_]] {
+    //def returns `this` as parent of `o`
+    //`o` cannot have a parent
+    def append[P[_], A, O](node1: N[P[A]], node2: N[O] ): N[P[O]] 
+    //returns the parent of both object, whith the nodes as its children
+    //both object need the same parent, or only one object will have a parent
+    def addSibling[O, P](node1: N, node2: O ): P
   }
   object Path {
     def empty: Path = Empty
   }
-  case class Node(children: Set[Path], tag: Symbol ) extends Path {
+
+  case class Start(tag: Symbol, children: Set[Path] ) extends Path {
+    def append(o: Path ): Path = ???
+    def addSibling(o: Path ): Path
+  }
+  case class Node(parent: Path, children: Set[Path], tag: Symbol ) extends Path {
     def append(o: Path ): Path =
       o match {
         case Empty => this
         case _     => Node( children + o, tag )
       }
   }
-  case class End(tag: Symbol ) extends Path {
+  case class End(parent: Path, tag: Symbol ) extends Path {
     def append(o: Path ): Path =
       o match {
         case Empty => this
