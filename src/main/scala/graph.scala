@@ -1,13 +1,6 @@
-import simulacrum._
-import shapeless._
+import shapeless.Nat
 import shapeless.nat._
-import shapeless.ops.nat._
-import labelled._
-import ops.record._
-import scala.language.implicitConversions
-import scala.language.higherKinds
-import cats.{ Applicative, Eq }
-import cats.implicits._
+import shapeless.ops.nat.Sum
 
 case class IGraph[I, G, O](graph: G )
 object IGraph {
@@ -60,10 +53,10 @@ trait ConcatBase {
 object Concat extends ConcatBase {
   type Aux[A, B, C] = Concat[A, B] { type Out = C }
   def apply[A, B, C](implicit C: Concat.Aux[A, B, C] ) = C
-  implicit def nodes[A, B, I <: Nat, O <: Nat, OA <: Nat, IB <: Nat, R <: Nat](implicit C: Concat.Aux[A, B, C], gte: GTEq[OA, IB], R: Diff.Aux[OA, IB, R], S: Sum[O, R] ) =
-    new Concat[IGraph[I, A, OA], IGraph[IB, B, O]] {
-      type Out = IGraph[I, C, S.Out]
-      def concat(start: IGraph[I, A, OA], end: IGraph[IB, B, O] ) =
+  implicit def nodes[A, B, I <: Nat, O <: Nat, R <: Nat](implicit C: Concat.Aux[A, B, C] ) =
+    new Concat[IGraph[I, A, R], IGraph[R, B, O]] {
+      type Out = IGraph[I, C, O]
+      def concat(start: IGraph[I, A, R], end: IGraph[R, B, O] ) =
         IGraph( C.concat( start.graph, end.graph ) )
     }
 }
