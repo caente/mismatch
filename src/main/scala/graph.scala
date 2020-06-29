@@ -4,7 +4,7 @@ import shapeless.ops.nat.Sum
 
 case class IGraph[I, G, O](graph: G )
 object IGraph {
-  def node[A](a: A ): IGraph[_1, A, _1] = IGraph( a )
+  def node[I <: Nat, A, O <: Nat](a: A ): IGraph[I, A, O] = IGraph( a )
 }
 sealed trait Connector[N, S, E, W]
 object Connector {
