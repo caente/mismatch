@@ -18,10 +18,6 @@ trait Juxtapose[A, B] {
 }
 
 trait JuxtaposeBase {
-// implicit def sum[A, B] = new Juxtapose[A, B] {
-//   type Out = Connector.Vertical[A, B]
-//   def juxtapose(g1: A, g2: B ) = Connector.Vertical( g1, g2 )
-// }
   implicit def nodesBase[A, B, IA <: Nat, OA <: Nat, IB <: Nat, OB <: Nat, C](implicit SI: Sum[IA, IB], SO: Sum[OA, OB] ) =
     new Juxtapose[IGraph[IA, A, OA], IGraph[IB, B, OB]] {
       type Out = IGraph[SI.Out, Connector.Vertical[IGraph[IA, A, OA], IGraph[IB, B, OB]], SO.Out]
@@ -39,16 +35,6 @@ object Juxtapose extends JuxtaposeBase {
       def juxtapose(g1: IGraph[IA, A, OA], g2: IGraph[IB, B, OB] ) =
         IGraph( R.juxtapose( g1.graph, g2.graph ) )
     }
-  //implicit def verticalLeft[A, B, C, JA, JB] =
-  //  new Juxtapose[Connector.Vertical[A, B], C] {
-  //    type Out = Connector.Vertical[A, Connector.Vertical[B, C]]
-  //    def juxtapose(g1: Connector.Vertical[A, B], g2: C ) = Connector.Vertical( g1.up, Connector.Vertical( g1.down, g2 ) )
-  //  }
-  //implicit def verticalRight[A, B, C, JA, JB] =
-  //  new Juxtapose[A, Connector.Vertical[B, C]] {
-  //    type Out = Connector.Vertical[A, Connector.Vertical[B, C]]
-  //    def juxtapose(g1: A, g2: Connector.Vertical[B, C] ) = Connector.Vertical( g1, g2 )
-  //  }
 }
 
 trait Concat[A, B] {
@@ -57,10 +43,6 @@ trait Concat[A, B] {
 }
 
 trait ConcatBase {
-  //implicit def sum[A, B] = new Concat[A, B] {
-  //  type Out = Connector.Horizontal[A, B]
-  //  def concat(g1: A, g2: B ) = Connector.Horizontal( g1, g2 )
-  //}
   implicit def nodesBase[A, B, I <: Nat, O <: Nat, R <: Nat] =
     new Concat[IGraph[I, A, R], IGraph[R, B, O]] {
       type Out = IGraph[I, Connector.Horizontal[IGraph[I, A, R], IGraph[R, B, O]], O]
@@ -78,16 +60,6 @@ object Concat extends ConcatBase {
       def concat(g1: IGraph[I, A, R], g2: IGraph[R, B, O] ) =
         IGraph( R.concat( g1.graph, g2.graph ) )
     }
-  //implicit def horizontalLeft[A, B, C, JA, JB] =
-  //  new Concat[Connector.Horizontal[A, B], C] {
-  //    type Out = Connector.Horizontal[A, Connector.Horizontal[B, C]]
-  //    def concat(g1: Connector.Horizontal[A, B], g2: C ) = Connector.Horizontal( g1.left, Connector.Horizontal( g1.right, g2 ) )
-  //  }
-  //implicit def horizontalRight[A, B, C, JA, JB] =
-  //  new Concat[A, Connector.Horizontal[B, C]] {
-  //    type Out = Connector.Horizontal[A, Connector.Horizontal[B, C]]
-  //    def concat(g1: A, g2: Connector.Horizontal[B, C] ) = Connector.Horizontal( g1, g2 )
-  //  }
 }
 
 trait Graph[N[_]] {
