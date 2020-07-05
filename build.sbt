@@ -13,6 +13,6 @@ libraryDependencies ++= Seq(
 )
 
 scalacOptions ++= Seq(
-  "-Ymacro-annotations",
-  "-Xlog-implicits"
+  "-Ymacro-annotations"
+  //"-Xlog-implicits"
 )

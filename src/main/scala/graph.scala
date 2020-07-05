@@ -8,8 +8,8 @@ object IGraph {
 }
 sealed trait Connector[N, S, E, W]
 object Connector {
-  case class Vertical[N, S](up: N, down: S ) extends Connector[N, S, Nothing, Nothing]
-  case class Horizontal[E, W](left: E, right: W ) extends Connector[Nothing, Nothing, E, W]
+  case class Adjacent[N, S](up: N, down: S ) extends Connector[N, S, Nothing, Nothing]
+  case class Connected[E, W](left: E, right: W ) extends Connector[Nothing, Nothing, E, W]
 }
 
 trait Juxtapose[A, B] {
@@ -20,9 +20,9 @@ trait Juxtapose[A, B] {
 trait JuxtaposeBase {
   implicit def nodesBase[A, B, IA <: Nat, OA <: Nat, IB <: Nat, OB <: Nat, C](implicit SI: Sum[IA, IB], SO: Sum[OA, OB] ) =
     new Juxtapose[IGraph[IA, A, OA], IGraph[IB, B, OB]] {
-      type Out = IGraph[SI.Out, Connector.Vertical[IGraph[IA, A, OA], IGraph[IB, B, OB]], SO.Out]
+      type Out = IGraph[SI.Out, Connector.Adjacent[IGraph[IA, A, OA], IGraph[IB, B, OB]], SO.Out]
       def juxtapose(g1: IGraph[IA, A, OA], g2: IGraph[IB, B, OB] ) =
-        IGraph( Connector.Vertical( g1, g2 ) )
+        IGraph( Connector.Adjacent( g1, g2 ) )
     }
 }
 object Juxtapose extends JuxtaposeBase {
@@ -45,9 +45,9 @@ trait Concat[A, B] {
 trait ConcatBase {
   implicit def nodesBase[A, B, I <: Nat, O <: Nat, R <: Nat] =
     new Concat[IGraph[I, A, R], IGraph[R, B, O]] {
-      type Out = IGraph[I, Connector.Horizontal[IGraph[I, A, R], IGraph[R, B, O]], O]
+      type Out = IGraph[I, Connector.Connected[IGraph[I, A, R], IGraph[R, B, O]], O]
       def concat(g1: IGraph[I, A, R], g2: IGraph[R, B, O] ) =
-        IGraph( Connector.Horizontal( g1, g2 ) )
+        IGraph( Connector.Connected( g1, g2 ) )
     }
 }
 object Concat extends ConcatBase {
@@ -63,7 +63,7 @@ object Concat extends ConcatBase {
 }
 
 trait Graph[N[_]] {
-  def node[A](a: A ): N[IGraph[_1, A, _1]]
+  def node[I, A, O](a: A ): N[IGraph[I, A, O]]
   def concat[A, B, I <: Nat, O <: Nat](start: N[IGraph[_, A, O]], end: N[IGraph[I, B, _]] )(implicit R: Concat.Aux[A, B, C] ): N[IGraph[I, C, O]]
   def juxtapose[A, B, IA <: Nat, OA <: Nat, IB <: Nat, OB <: Nat, C](
       g1: N[IGraph[IA, A, OA]],
@@ -86,13 +86,14 @@ object test extends App {
   val g1: Single[Int] = IGraph.node( 1 )
   val g2: Single[Int] = IGraph.node( 2 )
   val g3: Single[Int] = IGraph.node( 3 )
+  val g4: Single[Int] = IGraph.node( 4 )
 
-  val v12: IGraph[_2, Connector.Vertical[Single[Int], Single[Int]], _2] = g1.juxtapose( g2 )
-  val v123: IGraph[_3, Connector.Vertical[IGraph[_2, Connector.Vertical[Single[Int], Single[Int]], _2], Single[Int]], _3] = v12.juxtapose( g3 )
-  val v312: IGraph[_3, Connector.Vertical[Single[Int], IGraph[_2, Connector.Vertical[Single[Int], Single[Int]], _2]], _3] = g3.juxtapose( v12 )
-  val v1231: IGraph[_4, Connector.Vertical[IGraph[_3, Connector.Vertical[IGraph[_2, Connector.Vertical[Single[Int], Single[Int]], _2], Single[Int]], _3], Single[Int]], _4] =
+  val v12: IGraph[_2, Connector.Adjacent[Single[Int], Single[Int]], _2] = g1.juxtapose( g2 )
+  val v123: IGraph[_3, Connector.Adjacent[IGraph[_2, Connector.Adjacent[Single[Int], Single[Int]], _2], Single[Int]], _3] = v12.juxtapose( g3 )
+  val v312: IGraph[_3, Connector.Adjacent[Single[Int], IGraph[_2, Connector.Adjacent[Single[Int], Single[Int]], _2]], _3] = g3.juxtapose( v12 )
+  val v1231: IGraph[_4, Connector.Adjacent[IGraph[_3, Connector.Adjacent[IGraph[_2, Connector.Adjacent[Single[Int], Single[Int]], _2], Single[Int]], _3], Single[Int]], _4] =
     v12.juxtapose( g3 ).juxtapose( g1 )
-  val v1123: IGraph[_4, Connector.Vertical[Single[Int], IGraph[_3, Connector.Vertical[IGraph[_2, Connector.Vertical[Single[Int], Single[Int]], _2], Single[Int]], _3]], _4] =
+  val v1123: IGraph[_4, Connector.Adjacent[Single[Int], IGraph[_3, Connector.Adjacent[IGraph[_2, Connector.Adjacent[Single[Int], Single[Int]], _2], Single[Int]], _3]], _4] =
     g1.juxtapose( v12.juxtapose( g3 ) )
   pprint.pprintln( g1 )
   pprint.pprintln( v12 )
@@ -101,9 +102,9 @@ object test extends App {
   pprint.pprintln( v1231 )
   pprint.pprintln( v1123 )
   println( "-" * 30 )
-  val h12: Single[Connector.Horizontal[Single[Int], Single[Int]]] = g1.concat( g2 )
-  val h123: Single[Connector.Horizontal[Single[Connector.Horizontal[Single[Int], Single[Int]]], Single[Int]]] = h12.concat( g3 )
-  val h312: Single[Connector.Horizontal[Single[Int], Single[Connector.Horizontal[Single[Int], Single[Int]]]]] = g3.concat( h12 )
+  val h12: Single[Connector.Connected[Single[Int], Single[Int]]] = g1.concat( g2 )
+  val h123: Single[Connector.Connected[Single[Connector.Connected[Single[Int], Single[Int]]], Single[Int]]] = h12.concat( g3 )
+  val h312: Single[Connector.Connected[Single[Int], Single[Connector.Connected[Single[Int], Single[Int]]]]] = g3.concat( h12 )
   //val h1231: IGraph[_1, Connector.Horizontal[Int, Connector.Horizontal[Connector.Horizontal[Int, Int], Int]], _1] = h12.concat( g3 ).concat( g1 )
   //val h1123: IGraph[_1, Connector.Horizontal[Int, Connector.Horizontal[Int, Connector.Horizontal[Int, Int]]], _1] = g1.concat( h12.concat( g3 ) )
   pprint.pprintln( h12 )
@@ -114,5 +115,5 @@ object test extends App {
   println( "-" * 30 )
   val head = IGraph.node[_1, Single[Int], _3]( g1 )
   pprint.pprintln( head )
-  pprint.pprintln( head.concat( v123 ).juxtapose( g1 ) )
+  pprint.pprintln( head.concat( v123 ).juxtapose( g4.concat( g2 ).concat( head ).concat( v123 ) ) )
 }
