@@ -93,7 +93,7 @@ object Concat extends ConcatBase {
 }
 
 @typeclass trait Graph[N[_]] {
-  def node[I <: Nat, A, O <: Nat](a: A )(implicit I: Witness.Aux[I], O: Witness.Aux[O] ): N[IGraph[I, A, O]]
+  def node[A](a: A ): N[A]
   def concat[A, B, C](start: N[A], end: N[B] )(implicit C: Concat.Aux[A, B, C] ): N[C]
   def juxtapose[A, B, J](g1: N[A], g2: N[B] )(implicit J: Juxtapose.Aux[A, B, J] ): N[J]
 }
@@ -142,17 +142,13 @@ object test extends App {
   val head = IGraph.node[_1, Single[String], _3]( IGraph.node( "a" ) )
   println( head.show )
   println( head.concat( v123 ).juxtapose( g4.concat( g2 ).concat( head ).concat( v123 ) ).show )
-// case class R[A](unR: A )
-// implicit def RGraph = new Graph[R] {
-//   def node[I <: Nat, A, O <: Nat](a: A )(implicit I: Witness.Aux[I], O: Witness.Aux[O] ): R[IGraph[I, A, O]] = R( IGraph.node( a ) )
-//
-//   def concat[A, B, C](start: R[A], end: R[B] )(implicit C: Concat.Aux[A, B, C] ): R[C] = R( start.unR.concat( end.unR ) )
-//
-//   def juxtapose[A, B, J](g1: R[A], g2: R[B] )(implicit J: Juxtapose.Aux[A, B, J] ): R[J] = R( g1.unR.juxtapose( g2.unR ) )
-// }
-// import Graph.ops._
-// val gr = Graph[R].node[_1, String, _1]( "a" )
-// implicit def showR[A: Show]: Show[R[A]] = Show.show( r => r.unR.show )
-//
-// println( gr.show )
+  case class R[A](unR: A )
+  implicit def RGraph = new Graph[R] {
+    def node[A](a: A ): R[A] = R( a )
+    def concat[A, B, C](start: R[A], end: R[B] )(implicit C: Concat.Aux[A, B, C] ): R[C] = R( start.unR.concat( end.unR ) )
+
+    def juxtapose[A, B, J](g1: R[A], g2: R[B] )(implicit J: Juxtapose.Aux[A, B, J] ): R[J] = R( g1.unR.juxtapose( g2.unR ) )
+  }
+  import Graph.ops._
+  val gr = Graph[R].node( g1 )
 }
