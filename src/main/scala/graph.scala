@@ -34,6 +34,9 @@ trait JuxtaposeBase {
     }
 }
 object Juxtapose extends JuxtaposeBase {
+  implicit class JuxtaposeSyntax[A, B](a: A ) {
+    def juxtapose(b: B )(implicit J: Juxtapose[A, B] ) = J.juxtapose( a, b )
+  }
   type Aux[A, B, C] = Juxtapose[A, B] { type Out = C }
   def apply[A, B, C](implicit J: Juxtapose.Aux[A, B, C] ) = J
 
@@ -69,6 +72,10 @@ trait ConcatBase {
     }
 }
 object Concat extends ConcatBase {
+  implicit class ConcatSyntax[A, B](a: A ) {
+    def concat(b: B )(implicit J: Concat[A, B] ) = J.concat( a, b )
+  }
+
   type Aux[A, B, C] = Concat[A, B] { type Out = C }
   def apply[A, B, C](implicit J: Concat.Aux[A, B, C] ) = J
 
@@ -92,12 +99,9 @@ object Concat extends ConcatBase {
 }
 
 object test extends App {
-  implicit class JuxtaposeSyntax[A, B](a: A ) {
-    def juxtapose(b: B )(implicit J: Juxtapose[A, B] ) = J.juxtapose( a, b )
-  }
-  implicit class ConcatSyntax[A, B](a: A ) {
-    def concat(b: B )(implicit J: Concat[A, B] ) = J.concat( a, b )
-  }
+  import Concat.ConcatSyntax
+  import Juxtapose.JuxtaposeSyntax
+
   implicit def showSucc[P <: Nat](implicit S: shapeless.ops.nat.ToInt[Succ[P]] ): Show[Succ[P]] = Show.show( s => s.toInt.toString )
   implicit def showConnected[A: Show, B: Show]: Show[Connected[A, B]] = Show.show( c => s"${c.left.show} --> ${c.right.show}" )
   implicit def showAdjacent[A: Show, B: Show]: Show[Adjacent[A, B]] = Show.show( c => s"${c.up.show}\n----\n${c.down.show}\n----\n" )
@@ -137,7 +141,7 @@ object test extends App {
   println( "-" * 30 )
   val head = IGraph.node[_1, Single[String], _3]( IGraph.node( "a" ) )
   println( head.show )
-  println(head.concat( v123 ).juxtapose( g4.concat( g2 ).concat( head ).concat( v123 ) ).show)
+  println( head.concat( v123 ).juxtapose( g4.concat( g2 ).concat( head ).concat( v123 ) ).show )
 // case class R[A](unR: A )
 // implicit def RGraph = new Graph[R] {
 //   def node[I <: Nat, A, O <: Nat](a: A )(implicit I: Witness.Aux[I], O: Witness.Aux[O] ): R[IGraph[I, A, O]] = R( IGraph.node( a ) )
