@@ -9,6 +9,7 @@ import shapeless.Succ
 import cats.implicits._
 
 case class IGraph[I, G, O](in: I, graph: G, out: O )
+
 object IGraph {
   def node[I <: Nat, A, O <: Nat](a: A )(implicit I: Witness.Aux[I], O: Witness.Aux[O] ): IGraph[I, A, O] = IGraph( I.value, a, O.value )
 }
@@ -103,10 +104,10 @@ object test extends App {
   import Juxtapose.JuxtaposeSyntax
 
   implicit def showSucc[P <: Nat](implicit S: shapeless.ops.nat.ToInt[Succ[P]] ): Show[Succ[P]] = Show.show( s => s.toInt.toString )
-  implicit def showConnected[A: Show, B: Show]: Show[Connected[A, B]] = Show.show( c => s"${c.left.show} --> ${c.right.show}" )
-  implicit def showAdjacent[A: Show, B: Show]: Show[Adjacent[A, B]] = Show.show( c => s"${c.up.show}\n----\n${c.down.show}\n----\n" )
+  implicit def showConnected[A: Show, B: Show]: Show[Connected[A, B]] = Show.show( c => s"Connected(${c.left.show}, ${c.right.show})" )
+  implicit def showAdjacent[A: Show, B: Show]: Show[Adjacent[A, B]] = Show.show( c => s"Adjacent(${c.up.show}, ${c.down.show})" )
   implicit def showIGraph[I <: Nat, O <: Nat, A](implicit I: Show[I], A: Show[A], O: Show[O] ): Show[IGraph[I, A, O]] =
-    Show.show( gr => s"< [${gr.in.show}] |${gr.graph.show}| [${gr.out.show}] >" )
+    Show.show( gr => s"IGraph(${gr.in.show}, ${gr.graph.show}, ${gr.out.show})" )
   def manOf[T: Manifest](t: T ): Manifest[T] = manifest[T]
   type Single[A] = IGraph[_1, A, _1]
   val g1: Single[Int] = IGraph.node( 1 )
@@ -121,32 +122,32 @@ object test extends App {
     v12.juxtapose( g3 ).juxtapose( g1 )
   val v1123: IGraph[_4, Adjacent[Single[Int], IGraph[_3, Adjacent[IGraph[_2, Adjacent[Single[Int], Single[Int]], _2], Single[Int]], _3]], _4] =
     g1.juxtapose( v12.juxtapose( g3 ) )
-  pprint.pprintln( g1 )
-  pprint.pprintln( v12 )
-  pprint.pprintln( v123 )
-  pprint.pprintln( v312 )
-  pprint.pprintln( v1231 )
-  pprint.pprintln( v1123 )
+  pprint.pprintln( g1.show )
+  pprint.pprintln( v12.show )
+  pprint.pprintln( v123.show )
+  pprint.pprintln( v312.show )
+  pprint.pprintln( v1231.show )
+  pprint.pprintln( v1123.show )
   println( "-" * 30 )
   val h12: Single[Connected[Single[Int], Single[Int]]] = g1.concat( g2 )
   val h123: Single[Connected[Single[Connected[Single[Int], Single[Int]]], Single[Int]]] = h12.concat( g3 )
   val h312: Single[Connected[Single[Int], Single[Connected[Single[Int], Single[Int]]]]] = g3.concat( h12 )
   //val h1231: IGraph[_1, Connector.Horizontal[Int, Connector.Horizontal[Connector.Horizontal[Int, Int], Int]], _1] = h12.concat( g3 ).concat( g1 )
   //val h1123: IGraph[_1, Connector.Horizontal[Int, Connector.Horizontal[Int, Connector.Horizontal[Int, Int]]], _1] = g1.concat( h12.concat( g3 ) )
-  pprint.pprintln( h12 )
-  pprint.pprintln( h123 )
-  pprint.pprintln( h312 )
-  //pprint.pprintln( h1231 )
-  //pprint.pprintln( h1123 )
+  pprint.pprintln( h12.show )
+  pprint.pprintln( h123.show )
+  pprint.pprintln( h312.show )
+  //pprint.pprintln( h1231 .show)
+  //pprint.pprintln( h1123 .show)
   println( "-" * 30 )
-  val head = IGraph.node[_1, Single[String], _3]( IGraph.node( "a" ) )
-  println( head.show )
-  println( head.concat( v123 ).juxtapose( g4.concat( g2 ).concat( head ).concat( v123 ) ).show )
+  val head = IGraph.node[_1, String, _3]( "a" )
+  val tail = IGraph.node[_1, Double, _2]( 2.0 )
+  pprint.pprintln( head.concat( v123 ).show )
+  pprint.pprintln( head.juxtapose( tail ).show )
   case class R[A](unR: A )
   implicit def RGraph = new Graph[R] {
     def node[A](a: A ): R[A] = R( a )
     def concat[A, B, C](start: R[A], end: R[B] )(implicit C: Concat.Aux[A, B, C] ): R[C] = R( start.unR.concat( end.unR ) )
-
     def juxtapose[A, B, J](g1: R[A], g2: R[B] )(implicit J: Juxtapose.Aux[A, B, J] ): R[J] = R( g1.unR.juxtapose( g2.unR ) )
   }
   import Graph.ops._
