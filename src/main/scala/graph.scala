@@ -150,5 +150,5 @@ object test extends App {
     def juxtapose[A, B, J](g1: R[A], g2: R[B] )(implicit J: Juxtapose.Aux[A, B, J] ): R[J] = R( g1.unR.juxtapose( g2.unR ) )
   }
   import Graph.ops._
-  val gr = Graph[R].node( g1 )
+  val gr = Graph[R].node( g1 ).concat( Graph[R].node( g2 ) )
 }
