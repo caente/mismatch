@@ -174,7 +174,7 @@ object test extends App {
   implicit val FStr = new Functor[Str] {
     def map[A, B](fa: Str[A] )(f: A => B ): Str[B] = Str( fa.s )
   }
-  implicit def IGraphF[I, O] = new Functor[IGraph[I, ?, O]] {
+  implicit def IGraphF[I, O] = new Functor[IGraph[I, *, O]] {
     def map[A, B](fa: IGraph[I, A, O] )(f: A => B ): IGraph[I, B, O] = IGraph( fa.in, f( fa.graph ), fa.out )
   }
   def graphToString[I: Show, G: Show, O: Show]: Coalgebra[Str, IGraph[I, G, O]] = Coalgebra {
@@ -183,6 +183,7 @@ object test extends App {
   def printGraph[I: Show, G: Show, O: Show](g: IGraph[I, G, O] ) = {
     scheme.ana( graphToString[I, G, O] ).apply( g )
   }
+
   println( printGraph( graph[R].unR ) )
 
 }
