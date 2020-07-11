@@ -174,8 +174,13 @@ object test {
   implicit val FStr = new Functor[Str] {
     def map[A, B](fa: Str[A] )(f: A => B ): Str[B] = Str( fa.s )
   }
+<<<<<<< HEAD
   implicit def IGraphF[I, O] = new Functor[IGraph[I, O, *]] {
     def map[A, B](fa: IGraph[I, O, A] )(f: A => B ): IGraph[I, O, B] = IGraph( fa.in, f( fa.graph ), fa.out )
+=======
+  implicit def IGraphF[I, O] = new Functor[IGraph[I, *, O]] {
+    def map[A, B](fa: IGraph[I, A, O] )(f: A => B ): IGraph[I, B, O] = IGraph( fa.in, f( fa.graph ), fa.out )
+>>>>>>> c51a886... deprecated
   }
   def graphToString[I: Show, G: Show, O: Show]: Coalgebra[Str, IGraph[I, G, O]] = Coalgebra {
     case IGraph( in, g, out ) => Str( s"(${in.show},${g.show},${out.show})" )
