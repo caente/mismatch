@@ -9,10 +9,13 @@ libraryDependencies ++= Seq(
   "org.scalanlp" %% "breeze-viz" % "1.0",
   "com.chuusai" %% "shapeless" % "2.3.3",
   "com.lihaoyi" %% "pprint" % "0.5.9",
-  "org.typelevel" %% "cats-core" % "2.1.1"
+  "org.typelevel" %% "cats-core" % "2.1.1",
+  "io.higherkindness" %% "droste-core" % "0.8.0"
 )
 
 scalacOptions ++= Seq(
   "-Ymacro-annotations"
   //"-Xlog-implicits"
 )
+
+addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full)
