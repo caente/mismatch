@@ -10,10 +10,10 @@ import cats.implicits._
 import higherkindness.droste._
 import higherkindness.droste.data._
 
-case class IGraph[I, G, O](in: I, graph: G, out: O )
+case class IGraph[I, O, G](in: I, graph: G, out: O )
 
 object IGraph {
-  def node[I <: Nat, A, O <: Nat](a: A )(implicit I: Witness.Aux[I], O: Witness.Aux[O] ): IGraph[I, A, O] = IGraph( I.value, a, O.value )
+  def node[I <: Nat, O <: Nat, A](a: A )(implicit I: Witness.Aux[I], O: Witness.Aux[O] ): IGraph[I, O, A] = IGraph( I.value, a, O.value )
 }
 case class Adjacent[N, S](up: N, down: S )
 case class Connected[E, W](left: E, right: W )
@@ -35,9 +35,9 @@ object Juxtapose {
       RI: Witness.Aux[RI],
       RO: Witness.Aux[RO]
     ) =
-    new Juxtapose[IGraph[IA, A, OA], IGraph[IB, B, OB]] {
-      type Out = IGraph[RI, Adjacent[IGraph[IA, A, OA], IGraph[IB, B, OB]], RO]
-      def juxtapose(g1: IGraph[IA, A, OA], g2: IGraph[IB, B, OB] ) =
+    new Juxtapose[IGraph[IA, OA, A], IGraph[IB, OB, B]] {
+      type Out = IGraph[RI, RO, Adjacent[IGraph[IA, OA, A], IGraph[IB, OB, B]]]
+      def juxtapose(g1: IGraph[IA, OA, A], g2: IGraph[IB, OB, B] ) =
         IGraph( RI.value, Adjacent( g1, g2 ), RO.value )
     }
   implicit def nodes[A, B, IA <: Nat, OA <: Nat, IB <: Nat, OB <: Nat, RI <: Nat, RO <: Nat, C](
@@ -47,9 +47,9 @@ object Juxtapose {
       RI: Witness.Aux[RI],
       RO: Witness.Aux[RO]
     ) =
-    new Juxtapose[IGraph[IA, A, OA], IGraph[IB, B, OB]] {
-      type Out = IGraph[RI, C, RO]
-      def juxtapose(g1: IGraph[IA, A, OA], g2: IGraph[IB, B, OB] ) =
+    new Juxtapose[IGraph[IA, OA, A], IGraph[IB, OB, B]] {
+      type Out = IGraph[RI, RO, C]
+      def juxtapose(g1: IGraph[IA, OA, A], g2: IGraph[IB, OB, B] ) =
         IGraph( RI.value, R.juxtapose( g1.graph, g2.graph ), RO.value )
     }
 }
@@ -71,9 +71,9 @@ object Concat {
       I: Witness.Aux[I],
       O: Witness.Aux[O]
     ) =
-    new Concat[IGraph[I, A, R], IGraph[R, B, O]] {
-      type Out = IGraph[I, Connected[IGraph[I, A, R], IGraph[R, B, O]], O]
-      def concat(g1: IGraph[I, A, R], g2: IGraph[R, B, O] ) =
+    new Concat[IGraph[I, R, A], IGraph[R, O, B]] {
+      type Out = IGraph[I, O, Connected[IGraph[I, R, A], IGraph[R, O, B]]]
+      def concat(g1: IGraph[I, R, A], g2: IGraph[R, O, B] ) =
         IGraph( I.value, Connected( g1, g2 ), O.value )
     }
   implicit def nodes[A <: IGraph[_, _, _], B <: IGraph[_, _, _], I <: Nat, O <: Nat, R <: Nat, C](
@@ -82,9 +82,9 @@ object Concat {
       I: Witness.Aux[I],
       O: Witness.Aux[O]
     ) =
-    new Concat[IGraph[I, A, R], IGraph[R, B, O]] {
-      type Out = IGraph[I, C, O]
-      def concat(g1: IGraph[I, A, R], g2: IGraph[R, B, O] ) =
+    new Concat[IGraph[I, R, A], IGraph[R, O, B]] {
+      type Out = IGraph[I, O, C]
+      def concat(g1: IGraph[I, R, A], g2: IGraph[R, O, B] ) =
         IGraph( I.value, R.concat( g1.graph, g2.graph ), O.value )
     }
 }
@@ -102,22 +102,20 @@ object test extends App {
   implicit def showSucc[P <: Nat](implicit S: shapeless.ops.nat.ToInt[Succ[P]] ): Show[Succ[P]] = Show.show( s => s.toInt.toString )
   implicit def showConnected[A: Show, B: Show]: Show[Connected[A, B]] = Show.show( c => s"Connected(${c.left.show}, ${c.right.show})" )
   implicit def showAdjacent[A: Show, B: Show]: Show[Adjacent[A, B]] = Show.show( c => s"Adjacent(${c.up.show}, ${c.down.show})" )
-  implicit def showIGraph[I <: Nat, O <: Nat, A](implicit I: Show[I], A: Show[A], O: Show[O] ): Show[IGraph[I, A, O]] =
+  implicit def showIGraph[I <: Nat, O <: Nat, A](implicit I: Show[I], A: Show[A], O: Show[O] ): Show[IGraph[I, O, A]] =
     Show.show( gr => s"IGraph(${gr.in.show}, ${gr.graph.show}, ${gr.out.show})" )
   def manOf[T: Manifest](t: T ): Manifest[T] = manifest[T]
-  type Single[A] = IGraph[_1, A, _1]
+  type Single[A] = IGraph[_1, _1, A]
   val g1: Single[Int] = IGraph.node( 1 )
   val g2: Single[Int] = IGraph.node( 2 )
   val g3: Single[Int] = IGraph.node( 3 )
   val g4: Single[Int] = IGraph.node( 4 )
 
-  val v12: IGraph[_2, Adjacent[Single[Int], Single[Int]], _2] = g1.juxtapose( g2 )
-  val v123: IGraph[_3, Adjacent[IGraph[_2, Adjacent[Single[Int], Single[Int]], _2], Single[Int]], _3] = v12.juxtapose( g3 )
-  val v312: IGraph[_3, Adjacent[Single[Int], IGraph[_2, Adjacent[Single[Int], Single[Int]], _2]], _3] = g3.juxtapose( v12 )
-  val v1231: IGraph[_4, Adjacent[IGraph[_3, Adjacent[IGraph[_2, Adjacent[Single[Int], Single[Int]], _2], Single[Int]], _3], Single[Int]], _4] =
-    v12.juxtapose( g3 ).juxtapose( g1 )
-  val v1123: IGraph[_4, Adjacent[Single[Int], IGraph[_3, Adjacent[IGraph[_2, Adjacent[Single[Int], Single[Int]], _2], Single[Int]], _3]], _4] =
-    g1.juxtapose( v12.juxtapose( g3 ) )
+  val v12 = g1.juxtapose( g2 )
+  val v123 = v12.juxtapose( g3 )
+  val v312 = g3.juxtapose( v12 )
+  val v1231 = v12.juxtapose( g3 ).juxtapose( g1 )
+  val v1123 = g1.juxtapose( v12.juxtapose( g3 ) )
 // pprint.pprintln( g1.show )
 // pprint.pprintln( v12.show )
 // pprint.pprintln( v123.show )
@@ -125,9 +123,9 @@ object test extends App {
 // pprint.pprintln( v1231.show )
 // pprint.pprintln( v1123.show )
 // println( "-" * 30 )
-  val h12: Single[Connected[Single[Int], Single[Int]]] = g1.concat( g2 )
-  val h123: Single[Connected[Single[Connected[Single[Int], Single[Int]]], Single[Int]]] = h12.concat( g3 )
-  val h312: Single[Connected[Single[Int], Single[Connected[Single[Int], Single[Int]]]]] = g3.concat( h12 )
+  val h12 = g1.concat( g2 )
+  val h123 = h12.concat( g3 )
+  val h312 = g3.concat( h12 )
   //val h1231: IGraph[_1, Connector.Horizontal[Int, Connector.Horizontal[Connector.Horizontal[Int, Int], Int]], _1] = h12.concat( g3 ).concat( g1 )
   //val h1123: IGraph[_1, Connector.Horizontal[Int, Connector.Horizontal[Int, Connector.Horizontal[Int, Int]]], _1] = g1.concat( h12.concat( g3 ) )
   //pprint.pprintln( h12.show )
@@ -136,8 +134,8 @@ object test extends App {
   //pprint.pprintln( h1231 .show)
   //pprint.pprintln( h1123 .show)
   //println( "-" * 30 )
-  val head = IGraph.node[_1, String, _3]( "a" )
-  val tail = IGraph.node[_1, Double, _2]( 2.0 )
+  val head = IGraph.node[_1, _3, String]( "a" )
+  val tail = IGraph.node[_1, _2, Double]( 2.0 )
   //pprint.pprintln( head.concat( v123 ).show )
   val g = head.juxtapose( head.concat( v123 ) )
   //pprint.pprintln( g.show )
@@ -174,8 +172,8 @@ object test extends App {
   implicit val FStr = new Functor[Str] {
     def map[A, B](fa: Str[A] )(f: A => B ): Str[B] = Str( fa.s )
   }
-  implicit def IGraphF[I, O] = new Functor[IGraph[I, *, O]] {
-    def map[A, B](fa: IGraph[I, A, O] )(f: A => B ): IGraph[I, B, O] = IGraph( fa.in, f( fa.graph ), fa.out )
+  implicit def IGraphF[I, O] = new Functor[IGraph[I, O, *]] {
+    def map[A, B](fa: IGraph[I, O, A] )(f: A => B ): IGraph[I, O, B] = IGraph( fa.in, f( fa.graph ), fa.out )
   }
   def graphToString[I: Show, G: Show, O: Show]: Coalgebra[Str, IGraph[I, G, O]] = Coalgebra {
     case IGraph( in, g, out ) => Str( s"(${in.show},${g.show},${out.show})" )
@@ -186,4 +184,10 @@ object test extends App {
 
   println( printGraph( graph[R].unR ) )
 
+  def graphToPath[I, O, G]: Algebra[IGraph[I, O, *], G] = Algebra {
+    case IGraph( _, IGraph( _, g, _ ), _ )   => g
+    case IGraph( _, Adjacent( g1, g2 ), _ )  => g1
+    case IGraph( _, Connected( g1, g2 ), _ ) => g1
+    case IGraph( _, leaf, _ )                => leaf
+  }
 }
