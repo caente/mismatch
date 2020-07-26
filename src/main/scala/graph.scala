@@ -95,7 +95,7 @@ object Concat {
   def juxtapose[A, B, J](g1: N[A], g2: N[B] )(implicit J: Juxtapose.Aux[A, B, J] ): N[J]
 }
 
-object test extends App {
+object test {
   import Concat.ConcatSyntax
   import Juxtapose.JuxtaposeSyntax
 
@@ -184,10 +184,10 @@ object test extends App {
 
   println( printGraph( graph[R].unR ) )
 
-  def graphToPath[I, O, G]: Algebra[IGraph[I, O, *], G] = Algebra {
-    case IGraph( _, IGraph( _, g, _ ), _ )   => g
-    case IGraph( _, Adjacent( g1, g2 ), _ )  => g1
-    case IGraph( _, Connected( g1, g2 ), _ ) => g1
-    case IGraph( _, leaf, _ )                => leaf
-  }
+// def graphToPath[I, O, G]: Algebra[IGraph[I, O, *], G] = Algebra {
+//   case IGraph( _, IGraph( _, g, _ ), _ )   => g
+//   case IGraph( _, Adjacent( g1, g2 ), _ )  => g1
+//   case IGraph( _, Connected( g1, g2 ), _ ) => g1
+//   case IGraph( _, leaf, _ )                => leaf
+// }
 }
