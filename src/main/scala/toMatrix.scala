@@ -1,3 +1,4 @@
+package toMatrix
 import simulacrum._
 import shapeless._
 import labelled._

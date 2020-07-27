@@ -1,3 +1,5 @@
+package graph
+
 import shapeless.Nat
 import shapeless.nat._
 import shapeless.ops.nat.Sum
