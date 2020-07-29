@@ -64,17 +64,17 @@ object NeedlemanWunsch extends App {
       }
     addHeaders( updated, m.rowsVector, m.colsVector, i => Border( i ) )
   }
-  type ListTuple[A] = ( List[A], List[A] )
-  private def accAppl[A](row: A, col: A, acc: Set[ListTuple[A]] ): Set[ListTuple[A]] = {
-    if (acc.isEmpty) Set( ( List( row ), List( col ) ) )
+  case class Alignment[A](left: List[A], right: List[A] )
+  private def accAppl[A](row: A, col: A, acc: Set[Alignment[A]] ): Set[Alignment[A]] = {
+    if (acc.isEmpty) Set( Alignment( List( row ), List( col ) ) )
     else
       acc.map {
-        case ( left, right ) =>
-          ( row :: left, col :: right )
+        case Alignment( left, right ) =>
+          Alignment( row :: left, col :: right )
       }
   }
 
-  private def alignments[A: ClassTag](placeholder: A, row: Int, col: Int, matrix: DenseMatrix[Section[A]], acc: Set[ListTuple[A]] ): Set[ListTuple[A]] = {
+  private def alignments[A: ClassTag](placeholder: A, row: Int, col: Int, matrix: DenseMatrix[Section[A]], acc: Set[Alignment[A]] ): Set[Alignment[A]] = {
     val last = matrix( row, col )
     val next = last match {
       case Border( score ) => acc
@@ -109,7 +109,7 @@ object NeedlemanWunsch extends App {
     }
     next
   }
-  def apply[A: ClassTag: Zero: Eq](placeholder: A, left: Array[A], right: Array[A] ): Set[ListTuple[A]] = {
+  def apply[A: ClassTag: Zero: Eq](placeholder: A, left: Array[A], right: Array[A] ): Set[Alignment[A]] = {
     val m = NWMatrix( left, right )
     val matrix = sectionedMatrix( m )
     alignments(
@@ -117,7 +117,7 @@ object NeedlemanWunsch extends App {
       row = matrix.rows - 1,
       col = matrix.cols - 1,
       matrix = matrix,
-      acc = Set.empty[ListTuple[A]]
+      acc = Set.empty[Alignment[A]]
     )
   }
 }
