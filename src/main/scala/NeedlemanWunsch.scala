@@ -120,4 +120,8 @@ object NeedlemanWunsch extends App {
       acc = Set.empty[Alignment[A]]
     )
   }
+
+  private val left = Array( 'a, 'b, 'c, 'd )
+  private val right = Array( 'e, 'b, 'f )
+  println( apply( '-, left, right ) )
 }
