@@ -109,21 +109,15 @@ object NeedlemanWunsch extends App {
     }
     next
   }
-  private val m = NWMatrix( Array( 'a, 'b, 'c, 'd ), Array( 'e, 'b, 'f ) )
-  private val matrix = sectionedMatrix( m )
-  alignments(
-    placeholder = '-,
-    row = matrix.rows - 1,
-    col = matrix.cols - 1,
-    matrix = matrix,
-    acc = Set.empty[ListTuple[Symbol]]
-  ).foreach {
-    case ( left, right ) =>
-      println(
-      s"""
-        ${left.mkString( " " )}
-        ${right.mkString( " " )}
-        """
-      )
+  def apply[A: ClassTag: Zero: Eq](placeholder: A, left: Array[A], right: Array[A] ): Set[ListTuple[A]] = {
+    val m = NWMatrix( left, right )
+    val matrix = sectionedMatrix( m )
+    alignments(
+      placeholder = placeholder,
+      row = matrix.rows - 1,
+      col = matrix.cols - 1,
+      matrix = matrix,
+      acc = Set.empty[ListTuple[A]]
+    )
   }
 }
