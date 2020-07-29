@@ -29,7 +29,7 @@ object NeedlemanWunsch extends App {
   private case class TopBorder[+A](item: A, score: Int ) extends Scores[A]
   private case class LeftBorder[+A](item: A, score: Int ) extends Scores[A]
   private case class Corner[+A](score: Int ) extends Scores[A]
-  private case class Node[+A](rowHeader: A, colHeader: A, score: Int, neighbors: Neighbors ) extends Scores[A]
+  private case class InnerNode[+A](rowHeader: A, colHeader: A, score: Int, neighbors: Neighbors ) extends Scores[A]
   private case class NWMatrix[A: Zero: Eq: ClassTag](rowsHeaders: Array[A], colsHeaders: Array[A] ) {
     val rowsVector: DenseVector[Int] = DenseVector( 0 +: rowsHeaders.zipWithIndex.map( v => (v._2 + 1) * -1 ) )
     val colsVector = DenseVector( colsHeaders.zipWithIndex.map( v => (v._2 + 1) * -1 ) )
@@ -50,7 +50,7 @@ object NeedlemanWunsch extends App {
     val diag = m.matrix( row - 1, col - 1 ) + d
     val score = List( left, top, diag ).max
     m.matrix.update( row, col, score )
-    Node( rowHeader = rowHeader, colHeader = colHeader, score = score, neighbors = Neighbors( Left( left ), Diag( diag ), Top( top ) ) )
+    InnerNode( rowHeader = rowHeader, colHeader = colHeader, score = score, neighbors = Neighbors( Left( left ), Diag( diag ), Top( top ) ) )
   }
 
   private def scoredMatrix[A: Eq](m: NWMatrix[A] ): DenseMatrix[Scores[A]] = {
@@ -84,8 +84,8 @@ object NeedlemanWunsch extends App {
   }
 
   private def alignments[A: ClassTag](placeholder: A, row: Int, col: Int, matrix: DenseMatrix[Scores[A]], acc: Set[Alignment[A]] ): Set[Alignment[A]] = {
-    val last = matrix( row, col )
-    val next = last match {
+    matrix( row, col ) match {
+      case Corner( _ ) => acc
       case LeftBorder( item, score ) =>
         alignments(
           placeholder = placeholder,
@@ -102,8 +102,7 @@ object NeedlemanWunsch extends App {
           matrix = matrix,
           acc = accAppl( placeholder, item, acc )
         )
-      case Corner( _ ) => acc
-      case Node( rowHeader, colHeader, _, Neighbors( left, diag, top ) ) =>
+      case InnerNode( rowHeader, colHeader, _, Neighbors( left, diag, top ) ) =>
         val directions: Set[Score] = List( left, diag, top ).groupBy( _.score ).maxBy( _._1 )._2.toSet
         directions.flatMap {
           case Diag( _ ) =>
@@ -132,7 +131,6 @@ object NeedlemanWunsch extends App {
             )
         }
     }
-    next
   }
   def apply[A: ClassTag: Zero: Eq](placeholder: A, left: Array[A], right: Array[A] ): Set[Alignment[A]] = {
     val m = NWMatrix( left, right )
