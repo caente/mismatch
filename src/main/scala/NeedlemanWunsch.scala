@@ -44,10 +44,10 @@ object NeedlemanWunsch extends App {
   private def scores[A: Eq](m: NWMatrix[A], row: Int, col: Int ): Scores[A] = {
     val rowHeader = m.rowsHeaders( row - 1 )
     val colHeader = m.colsHeaders( col - 1 )
-    val d = if (colHeader === rowHeader) 1 else -1
     val left = m.matrix( row, col - 1 ) - 1
     val top = m.matrix( row - 1, col ) - 1
-    val diag = m.matrix( row - 1, col - 1 ) + d
+    val diff = if (colHeader === rowHeader) 1 else -1
+    val diag = m.matrix( row - 1, col - 1 ) + diff
     val score = List( left, top, diag ).max
     m.matrix.update( row, col, score )
     InnerNode( rowHeader = rowHeader, colHeader = colHeader, score = score, neighbors = Neighbors( Left( left ), Diag( diag ), Top( top ) ) )
