@@ -16,34 +16,37 @@ import scala.reflect.ClassTag
 import breeze.storage.Zero
 
 object NeedlemanWunsch extends App {
-  private case class Left(i: Int )
-  private case class Top(i: Int )
-  private case class Diag(i: Int )
+  private sealed trait Side {
+    def score: Int
+  }
+  private case class Left(score: Int ) extends Side
+  private case class Top(score: Int ) extends Side
+  private case class Diag(score: Int ) extends Side
   private case class Neighbors(left: Left, diag: Diag, top: Top )
   private sealed trait Section[+A] {
     def score: Int
   }
   private case class Border[+A](score: Int ) extends Section[A]
-  private case class Node[+A](fromRows: A, fromCols: A, score: Int, neighbors: Neighbors ) extends Section[A]
-  private case class NWMatrix[A: Zero: Eq: ClassTag](rows: Array[A], cols: Array[A] ) {
-    val rowsVector: DenseVector[Int] = DenseVector( 0 +: rows.zipWithIndex.map( v => (v._2 + 1) * -1 ) )
-    val colsVector = DenseVector( cols.zipWithIndex.map( v => (v._2 + 1) * -1 ) )
+  private case class Node[+A](rowHeader: A, colHeader: A, score: Int, neighbors: Neighbors ) extends Section[A]
+  private case class NWMatrix[A: Zero: Eq: ClassTag](rowsHeaders: Array[A], colsHeaders: Array[A] ) {
+    val rowsVector: DenseVector[Int] = DenseVector( 0 +: rowsHeaders.zipWithIndex.map( v => (v._2 + 1) * -1 ) )
+    val colsVector = DenseVector( colsHeaders.zipWithIndex.map( v => (v._2 + 1) * -1 ) )
     val matrix = {
-      val matrix = DenseMatrix.zeros[Int]( rows.length, cols.length )
+      val matrix = DenseMatrix.zeros[Int]( rowsHeaders.length, colsHeaders.length )
       addHeaders( matrix, rowsVector, colsVector, identity )
     }
   }
 
   private def section[A: Eq](m: NWMatrix[A], row: Int, col: Int ): Section[A] = {
-    val fromRows = m.rows( row - 1 )
-    val fromCols = m.cols( col - 1 )
-    val d = if (fromCols === fromRows) 1 else -1
+    val rowHeader = m.rowsHeaders( row - 1 )
+    val colHeader = m.colsHeaders( col - 1 )
+    val d = if (colHeader === rowHeader) 1 else -1
     val left = m.matrix( row, col - 1 ) + d
     val top = m.matrix( row - 1, col ) + d
     val diag = m.matrix( row - 1, col - 1 ) + d
     val score = List( left, top, diag ).max
     m.matrix.update( row, col, score )
-    Node( fromRows = fromRows, fromCols = fromCols, score = score, neighbors = Neighbors( Left( left ), Diag( diag ), Top( top ) ) )
+    Node( rowHeader = rowHeader, colHeader = colHeader, score = score, neighbors = Neighbors( Left( left ), Diag( diag ), Top( top ) ) )
   }
   private def addHeaders[O: ClassTag: Zero](matrix: DenseMatrix[O], rowsVector: DenseVector[Int], colsVector: DenseVector[Int], f: Int => O ) = {
     val matrixWithCols = DenseMatrix.vertcat( colsVector.mapValues( f ).toDenseMatrix, matrix )
@@ -61,17 +64,66 @@ object NeedlemanWunsch extends App {
       }
     addHeaders( updated, m.rowsVector, m.colsVector, i => Border( i ) )
   }
+  type ListTuple[A] = ( List[A], List[A] )
+  private def accAppl[A](row: A, col: A, acc: Set[ListTuple[A]] ): Set[ListTuple[A]] = {
+    if (acc.isEmpty) Set( ( List( row ), List( col ) ) )
+    else
+      acc.map {
+        case ( left, right ) =>
+          ( row :: left, col :: right )
+      }
+  }
 
-  private def alignments[A: Eq](matrix: DenseMatrix[Section[A]] ): Set[( Array[A], Array[A] )] = {
-    /*
-     * 1 - Start at the bottom left
-     * 2 - pick the neighbors with the biggest score
-     * 3 - for each neighbor with the same biggest score: goto 2)
-     */
-    ???
+  private def alignments[A: ClassTag](placeholder: A, row: Int, col: Int, matrix: DenseMatrix[Section[A]], acc: Set[ListTuple[A]] ): Set[ListTuple[A]] = {
+    val last = matrix( row, col )
+    val next = last match {
+      case Border( score ) => acc
+      case Node( rowHeader, colHeader, _, Neighbors( left, diag, top ) ) =>
+        val directions: Set[Side] = List( left, diag, top ).groupBy( _.score ).maxBy( _._1 )._2.toSet
+        directions.flatMap {
+          case Diag( _ ) =>
+            alignments(
+              placeholder = placeholder,
+              row = row - 1,
+              col = col - 1,
+              matrix = matrix,
+              acc = accAppl( rowHeader, colHeader, acc )
+            )
+          case Top( _ ) =>
+            alignments(
+              placeholder = placeholder,
+              row = row - 1,
+              col = col,
+              matrix = matrix,
+              acc = accAppl( rowHeader, placeholder, acc )
+            )
+          case Left( _ ) =>
+            alignments(
+              placeholder = placeholder,
+              row = row,
+              col = col - 1,
+              matrix = matrix,
+              acc = accAppl( placeholder, colHeader, acc )
+            )
+        }
+    }
+    next
   }
   private val m = NWMatrix( Array( 'a, 'b, 'c, 'd ), Array( 'e, 'b, 'f ) )
-  //println( m.matrix )
-  //println( "-" * 30 )
-  println( sectionedMatrix( m ) )
+  private val matrix = sectionedMatrix( m )
+  alignments(
+    placeholder = '-,
+    row = matrix.rows - 1,
+    col = matrix.cols - 1,
+    matrix = matrix,
+    acc = Set.empty[ListTuple[Symbol]]
+  ).foreach {
+    case ( left, right ) =>
+      println(
+      s"""
+        ${left.mkString( " " )}
+        ${right.mkString( " " )}
+        """
+      )
+  }
 }
