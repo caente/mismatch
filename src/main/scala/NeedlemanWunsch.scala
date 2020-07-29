@@ -74,7 +74,7 @@ object NeedlemanWunsch extends App {
     matrixWithRows
   }
   case class Alignment[A](left: List[A], right: List[A] )
-  private def accAppl[A](row: A, col: A, acc: Set[Alignment[A]] ): Set[Alignment[A]] = {
+  private def updateAccumulator[A](row: A, col: A, acc: Set[Alignment[A]] ): Set[Alignment[A]] = {
     if (acc.isEmpty) Set( Alignment( List( row ), List( col ) ) )
     else
       acc.map {
@@ -92,7 +92,7 @@ object NeedlemanWunsch extends App {
           row = row - 1,
           col = col,
           matrix = matrix,
-          acc = accAppl( item, placeholder, acc )
+          acc = updateAccumulator( item, placeholder, acc )
         )
       case TopBorder( item, score ) =>
         alignments(
@@ -100,7 +100,7 @@ object NeedlemanWunsch extends App {
           row = row,
           col = col - 1,
           matrix = matrix,
-          acc = accAppl( placeholder, item, acc )
+          acc = updateAccumulator( placeholder, item, acc )
         )
       case InnerNode( rowHeader, colHeader, _, Neighbors( left, diag, top ) ) =>
         val directions: Set[Score] = List( left, diag, top ).groupBy( _.score ).maxBy( _._1 )._2.toSet
@@ -111,7 +111,7 @@ object NeedlemanWunsch extends App {
               row = row - 1,
               col = col - 1,
               matrix = matrix,
-              acc = accAppl( rowHeader, colHeader, acc )
+              acc = updateAccumulator( rowHeader, colHeader, acc )
             )
           case Top( _ ) =>
             alignments(
@@ -119,7 +119,7 @@ object NeedlemanWunsch extends App {
               row = row - 1,
               col = col,
               matrix = matrix,
-              acc = accAppl( rowHeader, placeholder, acc )
+              acc = updateAccumulator( rowHeader, placeholder, acc )
             )
           case Left( _ ) =>
             alignments(
@@ -127,7 +127,7 @@ object NeedlemanWunsch extends App {
               row = row,
               col = col - 1,
               matrix = matrix,
-              acc = accAppl( placeholder, colHeader, acc )
+              acc = updateAccumulator( placeholder, colHeader, acc )
             )
         }
     }
