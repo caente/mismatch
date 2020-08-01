@@ -184,6 +184,14 @@ object test {
     scheme.ana( graphToString[I, G, O] ).apply( g )
   }
 
+  def dfs[I, O, G](
+      g: G
+    )(implicit
+      coalgebra: Coalgebra[IGraph[I, O, *], G]
+    ) = {
+    scheme.ana( coalgebra ).apply( g )
+  }
+
   println( printGraph( graph[R].unR ) )
 
 // def graphToPath[I, O, G]: Algebra[IGraph[I, O, *], G] = Algebra {

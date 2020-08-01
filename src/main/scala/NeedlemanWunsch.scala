@@ -144,17 +144,18 @@ object NeedlemanWunsch extends App {
     )
   }
 
-  private val left = Array( 'a, 'b, 'c, 'd )
-  private val right = Array( 'e, 'b, 'f )
-  //private val left = Array( 'a, 'b, 'c )
-  //private val right = Array( 'c, 'a )
+  //private val left = Array( 'a, 'b, 'c, 'd )
+  //private val right = Array( 'e, 'b, 'f )
+  private val left = Array( 'b, 'g )
+  private val right = Array( 'b, 'h, 'g )
 
   apply( '-, left, right ).foreach {
     case Alignment( left, right ) =>
       print(
-        s"""
-        ${left.mkString( " " )}
-        ${right.mkString( " " )}
+        s"""Set(
+          List(${left.map( _.name ).mkString( "," )})
+          List(${right.map( _.name ).mkString( "," )})
+      )
         """
       )
   }
