@@ -15,7 +15,7 @@ import breeze.linalg._
 import scala.reflect.ClassTag
 import breeze.storage.Zero
 
-object NeedlemanWunsch extends App {
+object NeedlemanWunsch {
   private sealed trait Score {
     def score: Int
   }
@@ -30,20 +30,21 @@ object NeedlemanWunsch extends App {
   private case class LeftBorder[+A](item: A, score: Int ) extends Scores[A]
   private case class Corner[+A](score: Int ) extends Scores[A]
   private case class InnerNode[+A](rowHeader: A, colHeader: A, score: Int, neighbors: Neighbors ) extends Scores[A]
-  private case class NWMatrix[A: Zero: Eq: ClassTag](rowsHeaders: Array[A], colsHeaders: Array[A] ) {
-    val rowsVector: DenseVector[Int] = DenseVector( 0 +: rowsHeaders.zipWithIndex.map( v => (v._2 + 1) * -1 ) )
-    val colsVector = DenseVector( colsHeaders.zipWithIndex.map( v => (v._2 + 1) * -1 ) )
-    val matrix = {
-      val matrix = DenseMatrix.zeros[Int]( rowsHeaders.length, colsHeaders.length )
-      val matrixWithCols = DenseMatrix.vertcat( colsVector.toDenseMatrix, matrix )
-      val matrixWithRows = DenseMatrix.horzcat( rowsVector.toDenseMatrix.t, matrixWithCols )
-      matrixWithRows
+  private case class NWMatrix[A: Zero: Eq: ClassTag](rowLabels: Array[A], colLabels: Array[A] ) {
+    val rowsVector: DenseVector[Int] = DenseVector( 0 +: rowLabels.zipWithIndex.map( v => (v._2 + 1) * -1 ) )
+    val colsVector = DenseVector( 0 +: colLabels.zipWithIndex.map( v => (v._2 + 1) * -1 ) )
+    val matrix: DenseMatrix[Int] = matrices.utils.padded( DenseMatrix.zeros[Int]( rowLabels.length, colLabels.length ), 1, 1 )
+    rowsVector.mapPairs {
+      case ( index, v ) => matrix.update( index, 0, v )
+    }
+    colsVector.mapPairs {
+      case ( index, v ) => matrix.update( 0, index, v )
     }
   }
 
   private def scores[A: Eq](m: NWMatrix[A], row: Int, col: Int ): Scores[A] = {
-    val rowHeader = m.rowsHeaders( row - 1 )
-    val colHeader = m.colsHeaders( col - 1 )
+    val rowHeader = m.rowLabels( row - 1 )
+    val colHeader = m.colLabels( col - 1 )
     val left = m.matrix( row, col - 1 ) - 1
     val top = m.matrix( row - 1, col ) - 1
     val diff = if (colHeader === rowHeader) 1 else -1
@@ -64,10 +65,10 @@ object NeedlemanWunsch extends App {
       }
     val scoredRowVector: DenseVector[Scores[A]] = m.rowsVector.mapPairs {
       case ( 0, score )     => Corner( score )
-      case ( index, score ) => LeftBorder( m.rowsHeaders( index - 1 ), score )
+      case ( index, score ) => LeftBorder( m.rowLabels( index - 1 ), score )
     }
-    val scoredColVector: DenseVector[Scores[A]] = m.colsVector.mapPairs {
-      case ( index, score ) => TopBorder( m.colsHeaders( index ), score )
+    val scoredColVector: DenseVector[Scores[A]] = m.colsVector( 1 until m.colsVector.length ).mapPairs {
+      case ( index, score ) => TopBorder( m.colLabels( index ), score )
     }
     val matrixWithCols = DenseMatrix.vertcat( scoredColVector.toDenseMatrix, updated )
     val matrixWithRows = DenseMatrix.horzcat( scoredRowVector.toDenseMatrix.t, matrixWithCols )
@@ -143,17 +144,20 @@ object NeedlemanWunsch extends App {
       acc = Set.empty[Alignment[A]]
     )
   }
+}
 
-  //private val left = Array( 'a, 'b, 'c, 'd )
-  //private val right = Array( 'e, 'b, 'f )
-  private val left = Array( 'b, 'g )
-  private val right = Array( 'b, 'h, 'g )
+object test extends App {
+  import NeedlemanWunsch._
+  private val left = Array( 'a, 'b, 'c, 'd )
+  private val right = Array( 'e, 'b, 'f )
+  //private val left = Array( 'b, 'g )
+  //private val right = Array( 'b, 'h, 'i )
 
-  apply( '-, left, right ).foreach {
+  NeedlemanWunsch( '-, left, right ).foreach {
     case Alignment( left, right ) =>
       print(
-        s"""Set(
-          List(${left.map( _.name ).mkString( "," )})
+        s"""(
+          List(${left.map( _.name ).mkString( "," )}),
           List(${right.map( _.name ).mkString( "," )})
       )
         """

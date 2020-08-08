@@ -10,7 +10,8 @@ libraryDependencies ++= Seq(
   "com.chuusai" %% "shapeless" % "2.3.3",
   "com.lihaoyi" %% "pprint" % "0.5.9",
   "org.typelevel" %% "cats-core" % "2.1.1",
-  "io.higherkindness" %% "droste-core" % "0.8.0"
+  "io.higherkindness" %% "droste-core" % "0.8.0",
+  "com.lihaoyi" % "ammonite" % "2.2.0" % "test" cross CrossVersion.full
 )
 
 scalacOptions ++= Seq(
@@ -19,3 +20,10 @@ scalacOptions ++= Seq(
 )
 
 addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full)
+
+
+sourceGenerators in Test += Def.task {
+  val file = (sourceManaged in Test).value / "amm.scala"
+  IO.write(file, """object amm extends App { ammonite.Main.main(args) }""")
+  Seq(file)
+}.taskValue
