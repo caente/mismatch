@@ -16,6 +16,19 @@ import scala.reflect.ClassTag
 import breeze.storage.Zero
 
 object NeedlemanWunsch {
+  case class Alignment[A](left: List[A], right: List[A] )
+  def apply[Label: ClassTag: Zero: Eq](placeholder: Label, left: Array[Label], right: Array[Label] ): Set[Alignment[Label]] = {
+    val m = NWMatrix( matrices.LabelledMatrix[Label, Int]( left, right ), placeholder )
+    val matrix = scoredMatrix( m )
+    alignments(
+      placeholder = placeholder,
+      row = matrix.rows - 1,
+      col = matrix.cols - 1,
+      matrix = matrix,
+      acc = Set.empty[Alignment[Label]]
+    )
+  }
+
   private sealed trait Score {
     def score: Int
   }
@@ -74,7 +87,6 @@ object NeedlemanWunsch {
     val matrixWithRows = DenseMatrix.horzcat( scoredRowVector.toDenseMatrix.t, matrixWithCols )
     matrixWithRows
   }
-  case class Alignment[A](left: List[A], right: List[A] )
   private def updateAccumulator[A](row: A, col: A, acc: Set[Alignment[A]] ): Set[Alignment[A]] = {
     if (acc.isEmpty) Set( Alignment( List( row ), List( col ) ) )
     else
@@ -132,17 +144,6 @@ object NeedlemanWunsch {
             )
         }
     }
-  }
-  def apply[Label: ClassTag: Zero: Eq](placeholder: Label, left: Array[Label], right: Array[Label] ): Set[Alignment[Label]] = {
-    val m = NWMatrix( matrices.LabelledMatrix[Label, Int]( left, right ), placeholder )
-    val matrix = scoredMatrix( m )
-    alignments(
-      placeholder = placeholder,
-      row = matrix.rows - 1,
-      col = matrix.cols - 1,
-      matrix = matrix,
-      acc = Set.empty[Alignment[Label]]
-    )
   }
 }
 
