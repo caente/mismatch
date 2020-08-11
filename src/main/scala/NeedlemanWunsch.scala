@@ -30,10 +30,10 @@ object NeedlemanWunsch {
   private case class LeftBorder[+A](item: A, score: Int ) extends Scores[A]
   private case class Corner[+A](score: Int ) extends Scores[A]
   private case class InnerNode[+A](rowHeader: A, colHeader: A, score: Int, neighbors: Neighbors ) extends Scores[A]
-  private case class NWMatrix[A: Zero: Eq: ClassTag](rowLabels: Array[A], colLabels: Array[A] ) {
-    val rowsVector: DenseVector[Int] = DenseVector( 0 +: rowLabels.zipWithIndex.map( v => (v._2 + 1) * -1 ) )
-    val colsVector = DenseVector( 0 +: colLabels.zipWithIndex.map( v => (v._2 + 1) * -1 ) )
-    val matrix: DenseMatrix[Int] = matrices.utils.padded( DenseMatrix.zeros[Int]( rowLabels.length, colLabels.length ), 1, 1 )
+  private case class NWMatrix[Label: ClassTag](labelledMatrix: matrices.LabelledMatrix[Label, Int], defaultLabel: Label ) {
+    val rowsVector: DenseVector[Int] = DenseVector( 0 +: labelledMatrix.rowLabels.zipWithIndex.map( v => (v._2 + 1) * -1 ) )
+    val colsVector = DenseVector( 0 +: labelledMatrix.colLabels.zipWithIndex.map( v => (v._2 + 1) * -1 ) )
+    val matrix = labelledMatrix.prepend( Array( defaultLabel ) )
     rowsVector.mapPairs {
       case ( index, v ) => matrix.update( index, 0, v )
     }
@@ -43,8 +43,8 @@ object NeedlemanWunsch {
   }
 
   private def scores[A: Eq](m: NWMatrix[A], row: Int, col: Int ): Scores[A] = {
-    val rowHeader = m.rowLabels( row - 1 )
-    val colHeader = m.colLabels( col - 1 )
+    val rowHeader = m.labelledMatrix.rowLabels( row - 1 )
+    val colHeader = m.labelledMatrix.colLabels( col - 1 )
     val left = m.matrix( row, col - 1 ) - 1
     val top = m.matrix( row - 1, col ) - 1
     val diff = if (colHeader === rowHeader) 1 else -1
@@ -65,10 +65,10 @@ object NeedlemanWunsch {
       }
     val scoredRowVector: DenseVector[Scores[A]] = m.rowsVector.mapPairs {
       case ( 0, score )     => Corner( score )
-      case ( index, score ) => LeftBorder( m.rowLabels( index - 1 ), score )
+      case ( index, score ) => LeftBorder( m.labelledMatrix.rowLabels( index - 1 ), score )
     }
     val scoredColVector: DenseVector[Scores[A]] = m.colsVector( 1 until m.colsVector.length ).mapPairs {
-      case ( index, score ) => TopBorder( m.colLabels( index ), score )
+      case ( index, score ) => TopBorder( m.labelledMatrix.colLabels( index ), score )
     }
     val matrixWithCols = DenseMatrix.vertcat( scoredColVector.toDenseMatrix, updated )
     val matrixWithRows = DenseMatrix.horzcat( scoredRowVector.toDenseMatrix.t, matrixWithCols )
@@ -133,15 +133,15 @@ object NeedlemanWunsch {
         }
     }
   }
-  def apply[A: ClassTag: Zero: Eq](placeholder: A, left: Array[A], right: Array[A] ): Set[Alignment[A]] = {
-    val m = NWMatrix( left, right )
+  def apply[Label: ClassTag: Zero: Eq](placeholder: Label, left: Array[Label], right: Array[Label] ): Set[Alignment[Label]] = {
+    val m = NWMatrix( matrices.LabelledMatrix[Label, Int]( left, right ), placeholder )
     val matrix = scoredMatrix( m )
     alignments(
       placeholder = placeholder,
       row = matrix.rows - 1,
       col = matrix.cols - 1,
       matrix = matrix,
-      acc = Set.empty[Alignment[A]]
+      acc = Set.empty[Alignment[Label]]
     )
   }
 }

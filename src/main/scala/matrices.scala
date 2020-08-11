@@ -18,17 +18,26 @@ import scala.reflect.ClassTag
 import breeze.storage.Zero
 
 object utils {
-  def padded[A](matrix: DenseMatrix[Int], extraRows: Int, extraCols: Int ): DenseMatrix[Int] = {
-    val rowsVector: DenseVector[Int] = DenseVector.zeros( matrix.rows + extraRows )
-    val colsVector: DenseVector[Int] = DenseVector.zeros( matrix.cols + extraCols - 1 )
-    val matrixWithCols: DenseMatrix[Int] = DenseMatrix.vertcat( colsVector.toDenseMatrix, matrix )
+  def padded[A: ClassTag: Zero](matrix: DenseMatrix[A], extraRows: Int, extraCols: Int ): DenseMatrix[A] = {
+    val rowsVector: DenseVector[A] = DenseVector.zeros( matrix.rows + extraRows )
+    val colsVector: DenseVector[A] = DenseVector.zeros( matrix.cols + extraCols - 1 )
+    val matrixWithCols: DenseMatrix[A] = DenseMatrix.vertcat( colsVector.toDenseMatrix, matrix )
     val matrixWithRows = DenseMatrix.horzcat( rowsVector.toDenseMatrix.t, matrixWithCols )
     matrixWithRows
   }
 }
 
-case class LabelledMatrix[A](rowLabels: Array[A], colLabels: Array[A] ) {
-  val matrix: DenseMatrix[Int] = DenseMatrix.zeros[Int]( rowLabels.length, colLabels.length )
+case class LabelledMatrix[Label: ClassTag, A: ClassTag: Zero](rowLabels: Array[Label], colLabels: Array[Label] ) {
+  private val matrix: DenseMatrix[A] = DenseMatrix.zeros[A]( rowLabels.length, colLabels.length )
+  def prepend(newLabels: Array[Label] ): LabelledMatrix[Label, A] = {
+    val paddedMatrix = utils.padded( matrix, newLabels.length, newLabels.length )
+    LabelledMatrix( newLabels ++ rowLabels, newLabels ++ colLabels )
+  }
+  def update(row: Int, col: Int, v: A ): Unit = matrix.update( row, col, v )
+  def apply(row: Int, col: Int ): A = matrix( row, col )
+  def apply(r1: Range, r2: Range ) = matrix( r1, r2 )
+  def rows: Int = matrix.rows
+  def cols: Int = matrix.cols
 }
 
 object M {
