@@ -40,8 +40,14 @@ case class LabelledMatrix[Label: ClassTag, A: ClassTag: Zero](rowLabels: Array[L
   def cols: Int = matrix.cols
 }
 
-object M {
-  def addNode[A](n: A, m: DenseMatrix[A] ): DenseMatrix[A] = {
-    m.reshape( m.rows + 1, m.cols + 1 )
+case class NeedlemanWunschMatrix[Label: ClassTag](labelledMatrix: matrices.LabelledMatrix[Label, Int], defaultLabel: Label ) {
+  val rowsVector: DenseVector[Int] = DenseVector( 0 +: labelledMatrix.rowLabels.zipWithIndex.map( v => (v._2 + 1) * -1 ) )
+  val colsVector = DenseVector( 0 +: labelledMatrix.colLabels.zipWithIndex.map( v => (v._2 + 1) * -1 ) )
+  val matrix = labelledMatrix.prepend( Array( defaultLabel ) )
+  rowsVector.mapPairs {
+    case ( index, v ) => matrix.update( index, 0, v )
+  }
+  colsVector.mapPairs {
+    case ( index, v ) => matrix.update( 0, index, v )
   }
 }
