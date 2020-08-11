@@ -46,8 +46,8 @@ object NeedlemanWunsch {
   private case class InnerNode[+A](rowHeader: A, colHeader: A, score: Int, neighbors: Neighbors ) extends Scores[A]
 
   private def scores[A: Eq](m: NeedlemanWunschMatrix[A], row: Int, col: Int ): Scores[A] = {
-    val rowHeader = m.labelledMatrix.rowLabels( row - 1 )
-    val colHeader = m.labelledMatrix.colLabels( col - 1 )
+    val rowHeader = m.rowLabels( row - 1 )
+    val colHeader = m.colLabels( col - 1 )
     val left = m.matrix( row, col - 1 ) - 1
     val top = m.matrix( row - 1, col ) - 1
     val diff = if (colHeader === rowHeader) 1 else -1
@@ -68,10 +68,10 @@ object NeedlemanWunsch {
       }
     val scoredRowVector: DenseVector[Scores[A]] = m.rowsVector.mapPairs {
       case ( 0, score )     => Corner( score )
-      case ( index, score ) => LeftBorder( m.labelledMatrix.rowLabels( index - 1 ), score )
+      case ( index, score ) => LeftBorder( m.rowLabels( index - 1 ), score )
     }
     val scoredColVector: DenseVector[Scores[A]] = m.colsVector( 1 until m.colsVector.length ).mapPairs {
-      case ( index, score ) => TopBorder( m.labelledMatrix.colLabels( index ), score )
+      case ( index, score ) => TopBorder( m.colLabels( index ), score )
     }
     val matrixWithCols = DenseMatrix.vertcat( scoredColVector.toDenseMatrix, updated )
     val matrixWithRows = DenseMatrix.horzcat( scoredRowVector.toDenseMatrix.t, matrixWithCols )

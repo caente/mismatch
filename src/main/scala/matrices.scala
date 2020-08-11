@@ -40,7 +40,9 @@ case class LabelledMatrix[Label: ClassTag, A: ClassTag: Zero](rowLabels: Array[L
   def cols: Int = matrix.cols
 }
 
-case class NeedlemanWunschMatrix[Label: ClassTag](labelledMatrix: matrices.LabelledMatrix[Label, Int], defaultLabel: Label ) {
+case class NeedlemanWunschMatrix[Label: ClassTag](private val labelledMatrix: matrices.LabelledMatrix[Label, Int], defaultLabel: Label ) {
+  val rowLabels = labelledMatrix.rowLabels
+  val colLabels = labelledMatrix.colLabels
   val rowsVector: DenseVector[Int] = DenseVector( 0 +: labelledMatrix.rowLabels.zipWithIndex.map( v => (v._2 + 1) * -1 ) )
   val colsVector = DenseVector( 0 +: labelledMatrix.colLabels.zipWithIndex.map( v => (v._2 + 1) * -1 ) )
   val matrix = labelledMatrix.prepend( Array( defaultLabel ) )
