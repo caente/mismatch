@@ -19,7 +19,7 @@ import matrices._
 object NeedlemanWunsch {
   case class Alignment[A](left: List[A], right: List[A] )
   def apply[Label: ClassTag: Zero: Eq](placeholder: Label, left: Array[Label], right: Array[Label] ): Set[Alignment[Label]] = {
-    val m = NeedlemanWunschMatrix( matrices.LabelledMatrix[Label, Int]( left, right ), placeholder )
+    val m = NeedlemanWunschMatrix( matrices.LabelledMatrix( left, right ), placeholder )
     val matrix = scoredMatrix( m )
     alignments(
       placeholder = placeholder,
@@ -28,6 +28,56 @@ object NeedlemanWunsch {
       matrix = matrix,
       acc = Set.empty[Alignment[Label]]
     )
+  }
+
+  private def alignments[A: ClassTag](placeholder: A, row: Int, col: Int, matrix: DenseMatrix[Scores[A]], acc: Set[Alignment[A]] ): Set[Alignment[A]] = {
+    matrix( row, col ) match {
+      case Corner( _ ) => acc
+      case LeftBorder( item, score ) =>
+        alignments(
+          placeholder = placeholder,
+          row = row - 1,
+          col = col,
+          matrix = matrix,
+          acc = updateAccumulator( item, placeholder, acc )
+        )
+      case TopBorder( item, score ) =>
+        alignments(
+          placeholder = placeholder,
+          row = row,
+          col = col - 1,
+          matrix = matrix,
+          acc = updateAccumulator( placeholder, item, acc )
+        )
+      case InnerNode( rowHeader, colHeader, _, Neighbors( left, diag, top ) ) =>
+        val directions: Set[Score] = List( left, diag, top ).groupBy( _.score ).maxBy( _._1 )._2.toSet
+        directions.flatMap {
+          case Diag( _ ) =>
+            alignments(
+              placeholder = placeholder,
+              row = row - 1,
+              col = col - 1,
+              matrix = matrix,
+              acc = updateAccumulator( rowHeader, colHeader, acc )
+            )
+          case Top( _ ) =>
+            alignments(
+              placeholder = placeholder,
+              row = row - 1,
+              col = col,
+              matrix = matrix,
+              acc = updateAccumulator( rowHeader, placeholder, acc )
+            )
+          case Left( _ ) =>
+            alignments(
+              placeholder = placeholder,
+              row = row,
+              col = col - 1,
+              matrix = matrix,
+              acc = updateAccumulator( placeholder, colHeader, acc )
+            )
+        }
+    }
   }
 
   private sealed trait Score {
@@ -84,56 +134,6 @@ object NeedlemanWunsch {
         case Alignment( left, right ) =>
           Alignment( row :: left, col :: right )
       }
-  }
-
-  private def alignments[A: ClassTag](placeholder: A, row: Int, col: Int, matrix: DenseMatrix[Scores[A]], acc: Set[Alignment[A]] ): Set[Alignment[A]] = {
-    matrix( row, col ) match {
-      case Corner( _ ) => acc
-      case LeftBorder( item, score ) =>
-        alignments(
-          placeholder = placeholder,
-          row = row - 1,
-          col = col,
-          matrix = matrix,
-          acc = updateAccumulator( item, placeholder, acc )
-        )
-      case TopBorder( item, score ) =>
-        alignments(
-          placeholder = placeholder,
-          row = row,
-          col = col - 1,
-          matrix = matrix,
-          acc = updateAccumulator( placeholder, item, acc )
-        )
-      case InnerNode( rowHeader, colHeader, _, Neighbors( left, diag, top ) ) =>
-        val directions: Set[Score] = List( left, diag, top ).groupBy( _.score ).maxBy( _._1 )._2.toSet
-        directions.flatMap {
-          case Diag( _ ) =>
-            alignments(
-              placeholder = placeholder,
-              row = row - 1,
-              col = col - 1,
-              matrix = matrix,
-              acc = updateAccumulator( rowHeader, colHeader, acc )
-            )
-          case Top( _ ) =>
-            alignments(
-              placeholder = placeholder,
-              row = row - 1,
-              col = col,
-              matrix = matrix,
-              acc = updateAccumulator( rowHeader, placeholder, acc )
-            )
-          case Left( _ ) =>
-            alignments(
-              placeholder = placeholder,
-              row = row,
-              col = col - 1,
-              matrix = matrix,
-              acc = updateAccumulator( placeholder, colHeader, acc )
-            )
-        }
-    }
   }
 }
 

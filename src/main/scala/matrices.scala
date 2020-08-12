@@ -27,11 +27,15 @@ object utils {
   }
 }
 
-case class LabelledMatrix[Label: ClassTag, A: ClassTag: Zero](rowLabels: Array[Label], colLabels: Array[Label] ) {
+case class LabelledMatrix[LabelRow: ClassTag, LabelCol: ClassTag, A: ClassTag: Zero](rowLabels: Array[LabelRow], colLabels: Array[LabelCol] ) {
   private val matrix: DenseMatrix[A] = DenseMatrix.zeros[A]( rowLabels.length, colLabels.length )
-  def prepend(newLabels: Array[Label] ): LabelledMatrix[Label, A] = {
-    val paddedMatrix = utils.padded( matrix, newLabels.length, newLabels.length )
-    LabelledMatrix( newLabels ++ rowLabels, newLabels ++ colLabels )
+  def prepend(newRowLabels: Array[LabelRow], newColLabels: Array[LabelCol] ): LabelledMatrix[LabelRow, LabelCol, A] = {
+    val paddedMatrix = utils.padded( matrix, newRowLabels.length, newColLabels.length )
+    LabelledMatrix( newRowLabels ++ rowLabels, newColLabels ++ colLabels )
+  }
+  def append(newRowLabels: Array[LabelRow], newColLabels: Array[LabelCol] ): LabelledMatrix[LabelRow, LabelCol, A] = {
+    val paddedMatrix = utils.padded( matrix, newRowLabels.length, newColLabels.length )
+    LabelledMatrix( rowLabels ++ newRowLabels, colLabels ++ newColLabels )
   }
   def update(row: Int, col: Int, v: A ): Unit = matrix.update( row, col, v )
   def apply(row: Int, col: Int ): A = matrix( row, col )
@@ -40,16 +44,26 @@ case class LabelledMatrix[Label: ClassTag, A: ClassTag: Zero](rowLabels: Array[L
   def cols: Int = matrix.cols
 }
 
-case class NeedlemanWunschMatrix[Label: ClassTag](private val labelledMatrix: matrices.LabelledMatrix[Label, Int], defaultLabel: Label ) {
+case class NeedlemanWunschMatrix[Label: ClassTag](private val labelledMatrix: matrices.LabelledMatrix[Label, Label, Int], defaultLabel: Label ) {
   val rowLabels = labelledMatrix.rowLabels
   val colLabels = labelledMatrix.colLabels
   val rowsVector: DenseVector[Int] = DenseVector( 0 +: labelledMatrix.rowLabels.zipWithIndex.map( v => (v._2 + 1) * -1 ) )
   val colsVector = DenseVector( 0 +: labelledMatrix.colLabels.zipWithIndex.map( v => (v._2 + 1) * -1 ) )
-  val matrix = labelledMatrix.prepend( Array( defaultLabel ) )
+  val matrix = labelledMatrix.prepend( Array( defaultLabel ), Array( defaultLabel ) )
   rowsVector.mapPairs {
     case ( index, v ) => matrix.update( index, 0, v )
   }
   colsVector.mapPairs {
     case ( index, v ) => matrix.update( 0, index, v )
+  }
+}
+
+case class GraphMatrix[Label: ClassTag: Eq](private val matrix: LabelledMatrix[Int, Label, Int] ) {
+  def addEdge(start: Label, end: Label ): GraphMatrix[Label] = {
+    val startIndex: Option[Int] =
+      matrix.colLabels.zipWithIndex.find( _._1 === start ).map( _._2 )
+    val endIndex: Option[Int] =
+      matrix.colLabels.zipWithIndex.find( _._1 === end ).map( _._2 )
+    ???
   }
 }
