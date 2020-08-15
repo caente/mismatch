@@ -50,7 +50,7 @@ val right = Foo(
 
 
 
-## Classes into DAGs
+## Classes into Trees
 
 These classes can be seen as Directed Acyclic Graphs (DAGs). Where the nodes are the names of the fields of the classes, e.g. `f`, `c`, etc. And the leaves are actual values, e.g. an int or case class that we want to treat as  leaf, e.g. `G()`, `E()`, or `J()`.
 
@@ -59,6 +59,8 @@ The graphs generated from classes will have the following properties:
 - There are no disconnected subgraphs
 - All edges are 1-to-many. 
 -  There are no multiple edges between two nodes.
+
+Which means that our DAGs are essentially trees.
 
 ### Left graph
 

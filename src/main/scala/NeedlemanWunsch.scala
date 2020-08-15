@@ -138,16 +138,17 @@ object NeedlemanWunsch {
 }
 
 object test extends App {
-  matrices.GraphMatrix
-    .single( 'Foo )
-    .addEdge( 'Foo, 'a )
-    .addEdge( 'Foo, 'b )
-    .addEdge( 'a, 'c )
-    .addEdge( 'a, 'd )
-    .addEdge( 'b, 'f )
-    .addEdge( 'b, 'g )
-    .addEdge( 'c, 'e )
-    .print
+  val tree =
+    matrices.GraphMatrix
+      .single( 'Foo )
+      .addEdge( 'Foo, 'a )
+      .addEdge( 'Foo, 'b )
+      .addEdge( 'a, 'c )
+      .addEdge( 'a, 'd )
+      .addEdge( 'b, 'f )
+      .addEdge( 'b, 'g )
+      .addEdge( 'c, 'e )
+  tree.print
   import NeedlemanWunsch._
   private val left = Array( 'a, 'b, 'c, 'd )
   private val right = Array( 'e, 'b, 'f )

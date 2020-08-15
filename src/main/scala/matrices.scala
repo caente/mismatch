@@ -38,18 +38,18 @@ object utils {
 object LabelledMatrix {
   def zeros[LabelRow: ClassTag, LabelCol: ClassTag, A: ClassTag: Zero](rowLabels: Array[LabelRow], colLabels: Array[LabelCol] ): LabelledMatrix[LabelRow, LabelCol, A] = {
     val matrix: DenseMatrix[A] = DenseMatrix.zeros[A]( rowLabels.length, colLabels.length )
-    LabelledMatrix( rowLabels, colLabels, matrix )
+    new LabelledMatrix( rowLabels, colLabels, matrix ) {}
   }
 }
-case class LabelledMatrix[LabelRow: ClassTag, LabelCol: ClassTag, A: ClassTag: Zero](rowLabels: Array[LabelRow], colLabels: Array[LabelCol], private val matrix: DenseMatrix[A] ) {
+abstract sealed case class LabelledMatrix[LabelRow: ClassTag, LabelCol: ClassTag, A: ClassTag: Zero](rowLabels: Array[LabelRow], colLabels: Array[LabelCol], private val matrix: DenseMatrix[A] ) {
   def print = println( matrix )
   def prepend(newRowLabels: Array[LabelRow], newColLabels: Array[LabelCol] ): LabelledMatrix[LabelRow, LabelCol, A] = {
     val paddedMatrix = utils.append( matrix, newRowLabels.length, newColLabels.length )
-    LabelledMatrix( newRowLabels ++ rowLabels, newColLabels ++ colLabels, paddedMatrix )
+    new LabelledMatrix( newRowLabels ++ rowLabels, newColLabels ++ colLabels, paddedMatrix ) {}
   }
   def append(newRowLabels: Array[LabelRow], newColLabels: Array[LabelCol] ): LabelledMatrix[LabelRow, LabelCol, A] = {
     val paddedMatrix = utils.append( matrix, newRowLabels.length, newColLabels.length )
-    LabelledMatrix( rowLabels ++ newRowLabels, colLabels ++ newColLabels, paddedMatrix )
+    new LabelledMatrix( rowLabels ++ newRowLabels, colLabels ++ newColLabels, paddedMatrix ) {}
   }
   def update(row: Int, col: Int, v: A ): Unit = matrix.update( row, col, v )
   def apply(row: Int, col: Int ): A = matrix( row, col )
@@ -73,8 +73,8 @@ case class NeedlemanWunschMatrix[Label: ClassTag](private val labelledMatrix: ma
   }
 }
 
-case class GraphMatrix[Label: ClassTag: Eq](private val matrix: LabelledMatrix[Int, Label, Int] ) {
-  val indexedColLabels = matrix.colLabels.zipWithIndex.toMap
+abstract sealed case class GraphMatrix[Label: ClassTag: Eq](private val matrix: LabelledMatrix[Int, Label, Int] ) {
+  private val indexedColLabels = matrix.colLabels.zipWithIndex.toMap
   def addEdge(start: Label, end: Label ): GraphMatrix[Label] = {
     val startIndex: Option[Int] = indexedColLabels.get( start )
     val endIndex: Option[Int] = indexedColLabels.get( end )
@@ -83,19 +83,20 @@ case class GraphMatrix[Label: ClassTag: Eq](private val matrix: LabelledMatrix[I
       case ( Some( _ ), Some( _ ) ) => Array()
       case ( Some( _ ), None )      => Array( end )
       case ( None, Some( _ ) )      => Array( start )
-      case _                        => Array()
+      case _                        => Array( start, end )
     }
     val newMatrix: LabelledMatrix[Int, Label, Int] = matrix.append( Array( newEdge ), newNodes )
     val startCol = startIndex.getOrElse( matrix.colLabels.length - 1 )
     val endCol = endIndex.getOrElse( newMatrix.colLabels.length - 1 )
     newMatrix.update( newEdge - 1, startCol, -1 )
     newMatrix.update( newEdge - 1, endCol, 1 )
-    GraphMatrix( newMatrix )
+    new GraphMatrix( newMatrix ) {}
   }
+  def leaves: Set[List[Label]] = ???
   def print = matrix.print
 }
 
 object GraphMatrix {
   def single[Label: ClassTag: Eq](node: Label ): GraphMatrix[Label] =
-    GraphMatrix( LabelledMatrix.zeros( Array(), Array( node ) ) )
+    new GraphMatrix( LabelledMatrix.zeros( Array(), Array( node ) ) ) {}
 }
