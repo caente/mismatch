@@ -17,6 +17,7 @@ import breeze.linalg.DenseVector
 import scala.reflect.ClassTag
 import breeze.storage.Zero
 import breeze.linalg.CanPadRight
+import breeze.math.Semiring
 
 object utils {
   def prepend[A: ClassTag: Zero](matrix: DenseMatrix[A], extraRows: Int, extraCols: Int ): DenseMatrix[A] = {
@@ -36,12 +37,15 @@ object utils {
 }
 
 object LabelledMatrix {
-  def zeros[LabelRow: ClassTag, LabelCol: ClassTag, A: ClassTag: Zero](rowLabels: Array[LabelRow], colLabels: Array[LabelCol] ): LabelledMatrix[LabelRow, LabelCol, A] = {
+  def zeros[LabelRow: ClassTag, LabelCol: ClassTag, A: ClassTag: Zero: Semiring](rowLabels: Array[LabelRow], colLabels: Array[LabelCol] ): LabelledMatrix[LabelRow, LabelCol, A] = {
     val matrix: DenseMatrix[A] = DenseMatrix.zeros[A]( rowLabels.length, colLabels.length )
     new LabelledMatrix( rowLabels, colLabels, matrix ) {}
   }
 }
-abstract sealed case class LabelledMatrix[LabelRow: ClassTag, LabelCol: ClassTag, A: ClassTag: Zero](rowLabels: Array[LabelRow], colLabels: Array[LabelCol], private val matrix: DenseMatrix[A] ) {
+abstract sealed case class LabelledMatrix[LabelRow: ClassTag, LabelCol: ClassTag, A: ClassTag: Zero: Semiring](
+    rowLabels: Array[LabelRow],
+    colLabels: Array[LabelCol],
+    private val matrix: DenseMatrix[A]) {
   def print = println( matrix )
   def prepend(newRowLabels: Array[LabelRow], newColLabels: Array[LabelCol] ): LabelledMatrix[LabelRow, LabelCol, A] = {
     val paddedMatrix = utils.append( matrix, newRowLabels.length, newColLabels.length )
@@ -56,6 +60,7 @@ abstract sealed case class LabelledMatrix[LabelRow: ClassTag, LabelCol: ClassTag
   def apply(r1: Range, r2: Range ) = matrix( r1, r2 )
   def rows: Int = matrix.rows
   def cols: Int = matrix.cols
+  def columnSum = matrix.t * DenseVector.ones[A]( matrix.rows )
   override def toString = s"$matrix"
 }
 
@@ -73,7 +78,7 @@ case class NeedlemanWunschMatrix[Label: ClassTag](private val labelledMatrix: ma
   }
 }
 
-abstract sealed case class GraphMatrix[Label: ClassTag: Eq](private val matrix: LabelledMatrix[Int, Label, Int] ) {
+abstract sealed case class GraphMatrix[Label: ClassTag: Eq](val matrix: LabelledMatrix[Int, Label, Int] ) {
   private val indexedColLabels = matrix.colLabels.zipWithIndex.toMap
   def addEdge(start: Label, end: Label ): GraphMatrix[Label] = {
     val startIndex: Option[Int] = indexedColLabels.get( start )

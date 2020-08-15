@@ -148,7 +148,7 @@ object test extends App {
       .addEdge( 'b, 'f )
       .addEdge( 'b, 'g )
       .addEdge( 'c, 'e )
-  tree.print
+  println( tree.matrix.columnSum )
   import NeedlemanWunsch._
   private val left = Array( 'a, 'b, 'c, 'd )
   private val right = Array( 'e, 'b, 'f )
