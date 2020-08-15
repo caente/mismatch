@@ -19,7 +19,7 @@ import matrices._
 object NeedlemanWunsch {
   case class Alignment[A](left: List[A], right: List[A] )
   def apply[Label: ClassTag: Zero: Eq](placeholder: Label, left: Array[Label], right: Array[Label] ): Set[Alignment[Label]] = {
-    val m = NeedlemanWunschMatrix( matrices.LabelledMatrix( left, right ), placeholder )
+    val m = NeedlemanWunschMatrix( matrices.LabelledMatrix.zeros( left, right ), placeholder )
     val matrix = scoredMatrix( m )
     alignments(
       placeholder = placeholder,
@@ -116,11 +116,11 @@ object NeedlemanWunsch {
           val s = scores( m, row, col )
           s
       }
-    val scoredRowVector: DenseVector[Scores[A]] = m.rowsVector.mapPairs {
+    val scoredRowVector: DenseVector[Scores[A]] = m.columnVector.mapPairs {
       case ( 0, score )     => Corner( score )
       case ( index, score ) => LeftBorder( m.rowLabels( index - 1 ), score )
     }
-    val scoredColVector: DenseVector[Scores[A]] = m.colsVector( 1 until m.colsVector.length ).mapPairs {
+    val scoredColVector: DenseVector[Scores[A]] = m.horizontalVector( 1 until m.horizontalVector.length ).mapPairs {
       case ( index, score ) => TopBorder( m.colLabels( index ), score )
     }
     val matrixWithCols = DenseMatrix.vertcat( scoredColVector.toDenseMatrix, updated )
@@ -138,6 +138,16 @@ object NeedlemanWunsch {
 }
 
 object test extends App {
+  matrices.GraphMatrix
+    .single( 'Foo )
+    .addEdge( 'Foo, 'a )
+    .addEdge( 'Foo, 'b )
+    .addEdge( 'a, 'c )
+    .addEdge( 'a, 'd )
+    .addEdge( 'b, 'f )
+    .addEdge( 'b, 'g )
+    .addEdge( 'c, 'e )
+    .print
   import NeedlemanWunsch._
   private val left = Array( 'a, 'b, 'c, 'd )
   private val right = Array( 'e, 'b, 'f )

@@ -288,6 +288,20 @@ b,h,i
 
 ### New DAGs from difference
 
+For each pairing:
+
+```python
+pairing = (left_nodes, right_nodes)
+for left, right in paring:
+    if left == right:
+        add_edge(previous, Same(left))
+    else:
+        add_edge(previous, Removed(left))
+        add_edge(previous, Added(right))	
+```
+
+
+
 To create a new graph we can iterate over the two lists simultaneously, of the two elements are the same, they become a single node, otherwise the graph branches:
 
 
