@@ -20,10 +20,11 @@ import breeze.linalg.CanPadRight
 
 object utils {
   def prepend[A: ClassTag: Zero](matrix: DenseMatrix[A], extraRows: Int, extraCols: Int ): DenseMatrix[A] = {
-    val newRowsMatrix: DenseVector[A] = DenseVector.zeros( matrix.rows + extraRows )
-    val horizontalVector: DenseVector[A] = DenseVector.zeros( matrix.cols + extraCols - 1 )
-    val matrixExtraCols: DenseMatrix[A] = DenseMatrix.vertcat( horizontalVector.toDenseMatrix, matrix )
-    DenseMatrix.horzcat( newRowsMatrix.toDenseMatrix.t, matrixExtraCols )
+    val newColsMatrix = DenseMatrix.zeros( matrix.rows, extraCols )
+    val newRowsMatrix = DenseMatrix.zeros( extraRows, matrix.cols + extraCols )
+    val matrixExtraCols = DenseMatrix.horzcat( newColsMatrix, matrix )
+    val padded = DenseMatrix.vertcat( matrixExtraCols, matrixExtraCols )
+    padded
   }
   def append[A: ClassTag: Zero](matrix: DenseMatrix[A], extraRows: Int, extraCols: Int ): DenseMatrix[A] = {
     val newColsMatrix = DenseMatrix.zeros( matrix.rows, extraCols )
