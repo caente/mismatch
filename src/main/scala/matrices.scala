@@ -78,7 +78,7 @@ case class NeedlemanWunschMatrix[Label: ClassTag](private val labelledMatrix: ma
   }
 }
 
-abstract sealed case class GraphMatrix[Label: ClassTag: Eq](val matrix: LabelledMatrix[Int, Label, Int] ) {
+abstract sealed case class GraphMatrix[Label: ClassTag: Eq](private val matrix: LabelledMatrix[Int, Label, Int] ) {
   private val indexedColLabels = matrix.colLabels.zipWithIndex.toMap
   def addEdge(start: Label, end: Label ): GraphMatrix[Label] = {
     val startIndex: Option[Int] = indexedColLabels.get( start )
@@ -88,7 +88,7 @@ abstract sealed case class GraphMatrix[Label: ClassTag: Eq](val matrix: Labelled
       case ( Some( _ ), Some( _ ) ) => Array()
       case ( Some( _ ), None )      => Array( end )
       case ( None, Some( _ ) )      => Array( start )
-      case _                        => Array( start, end )
+      case _                        => throw new IllegalArgumentException( "At least one node must exist" )
     }
     val newMatrix: LabelledMatrix[Int, Label, Int] = matrix.append( Array( newEdge ), newNodes )
     val startCol = startIndex.getOrElse( matrix.colLabels.length - 1 )
