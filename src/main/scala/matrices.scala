@@ -28,25 +28,8 @@ object utils {
   def append[A: ClassTag: Zero](matrix: DenseMatrix[A], extraRows: Int, extraCols: Int ): DenseMatrix[A] = {
     val newColsMatrix = DenseMatrix.zeros( matrix.rows, extraCols )
     val newRowsMatrix = DenseMatrix.zeros( extraRows, matrix.cols + extraCols )
-    // println( "*" * 30 )
-    // print( "matrix: " )
-    // println( matrix.rows, matrix.cols )
-    // println( matrix )
-    // print( "newRowsMatrix: " )
-    // println( newRowsMatrix.rows, newRowsMatrix.cols )
-    // println( newRowsMatrix )
-    // print( "newColsMatrix: " )
-    // println( newColsMatrix.rows, newColsMatrix.cols )
-    // println( newColsMatrix )
     val matrixExtraCols = DenseMatrix.horzcat( matrix, newColsMatrix )
-    // println( "matrixExtraCols" )
-    // println( matrixExtraCols.rows, matrixExtraCols.cols )
-    // println( matrixExtraCols )
     val padded = DenseMatrix.vertcat( matrixExtraCols, newRowsMatrix )
-    // println( "padded" )
-    // println( padded.rows, padded.cols )
-    // println( padded )
-    // println( "*" * 30 )
     padded
   }
 }
@@ -64,8 +47,6 @@ case class LabelledMatrix[LabelRow: ClassTag, LabelCol: ClassTag, A: ClassTag: Z
     LabelledMatrix( newRowLabels ++ rowLabels, newColLabels ++ colLabels, paddedMatrix )
   }
   def append(newRowLabels: Array[LabelRow], newColLabels: Array[LabelCol] ): LabelledMatrix[LabelRow, LabelCol, A] = {
-    //println( s"newRowLabels: ${newRowLabels.toList}" )
-    //println( s"newColLabels: ${newColLabels.toList}" )
     val paddedMatrix = utils.append( matrix, newRowLabels.length, newColLabels.length )
     LabelledMatrix( rowLabels ++ newRowLabels, colLabels ++ newColLabels, paddedMatrix )
   }
@@ -96,9 +77,6 @@ case class GraphMatrix[Label: ClassTag: Eq](private val matrix: LabelledMatrix[I
   def addEdge(start: Label, end: Label ): GraphMatrix[Label] = {
     val startIndex: Option[Int] = indexedColLabels.get( start )
     val endIndex: Option[Int] = indexedColLabels.get( end )
-    //pprint.pprintln( indexedColLabels )
-    println( s"start=$start" )
-    println( s"end=$end" )
     val newEdge = matrix.rowLabels.lastOption.map( _ + 1 ).getOrElse( 1 )
     val newNodes = ( startIndex, endIndex ) match {
       case ( Some( _ ), Some( _ ) ) => Array()
@@ -106,23 +84,11 @@ case class GraphMatrix[Label: ClassTag: Eq](private val matrix: LabelledMatrix[I
       case ( None, Some( _ ) )      => Array( start )
       case _                        => Array()
     }
-    // println( "matrix: " )
-    //matrix.print
     val newMatrix: LabelledMatrix[Int, Label, Int] = matrix.append( Array( newEdge ), newNodes )
-    //println( "matrix padded: " )
-    //newMatrix.print
     val startCol = startIndex.getOrElse( matrix.colLabels.length - 1 )
     val endCol = endIndex.getOrElse( newMatrix.colLabels.length - 1 )
-    //println( s"startCol=$startCol" )
-    //println( s"endCol=$endCol" )
-    //println( s"newEdge=$newEdge" )
-    //println( s"newNodes=${newNodes.toList}" )
     newMatrix.update( newEdge - 1, startCol, -1 )
     newMatrix.update( newEdge - 1, endCol, 1 )
-    //println( "matrix padded and updated: " )
-    pprint.pprintln( newMatrix.colLabels.toList )
-    newMatrix.print
-    println( "-" * 30 )
     GraphMatrix( newMatrix )
   }
   def print = matrix.print
