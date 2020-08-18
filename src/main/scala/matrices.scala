@@ -98,7 +98,8 @@ abstract sealed case class GraphMatrix[Label: ClassTag: Eq](private val matrix: 
     new GraphMatrix( newMatrix ) {}
   }
 
-  private def pathToRoot(col: Int ): List[Label] = {
+  private def pathToRoot(label: Label ): List[Label] = {
+    val col = indexedColLabels( label )
     // this vector will be of the form [0, -1, -2, -3, 0, -4....], where 0 is the current column
     // the goal is to find the dot product of this vector with the row vector corresponding to the
     // outgoing edge
@@ -111,10 +112,10 @@ abstract sealed case class GraphMatrix[Label: ClassTag: Eq](private val matrix: 
       .toList
       .zipWithIndex
       .collect {
-        case ( 1, index ) => // found the row with value 1, since we are looking for the incoming edge
+        case ( 1, index ) => // found the row with value 1, since we are looking for the incoming edge, there can only be a single 1
           val row = matrix.row( index ) // row vector corresponding the the incoming edge
           val nextCol = row.dot( colFinder ) // the column where the value is -1, i.e. an outoging edge
-          matrix.colLabels( col ) :: pathToRoot( nextCol )
+          label :: pathToRoot( matrix.colLabels( nextCol ) )
       }
       .flatten
   }
@@ -123,7 +124,7 @@ abstract sealed case class GraphMatrix[Label: ClassTag: Eq](private val matrix: 
     matrix.columnSum.toArray
       .zip( matrix.colLabels )
       .collect {
-        case ( 1, label ) => pathToRoot( indexedColLabels( label ) )
+        case ( 1, label ) => pathToRoot( label )
       }
   }
 
