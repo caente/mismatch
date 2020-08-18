@@ -19,7 +19,7 @@ import matrices._
 object NeedlemanWunsch {
   case class Alignment[A](left: List[A], right: List[A] )
   def apply[Label: ClassTag: Zero: Eq](placeholder: Label, left: Array[Label], right: Array[Label] ): Set[Alignment[Label]] = {
-    val m = NeedlemanWunschMatrix( matrices.LabelledMatrix.zeros( left, right ), placeholder )
+    val m = NeedlemanWunschMatrix( placeholder, left, right )
     val matrix = scoredMatrix( m )
     alignments(
       placeholder = placeholder,
@@ -149,6 +149,7 @@ object test extends App {
       .addEdge( 'b, 'g )
       .addEdge( 'c, 'e )
   tree.print
+  println( tree.leaves.toList )
   import NeedlemanWunsch._
   private val left = Array( 'a, 'b, 'c, 'd )
   private val right = Array( 'e, 'b, 'f )

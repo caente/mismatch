@@ -1,17 +1,10 @@
 package matrices
 
-import shapeless.Nat
-import shapeless.nat._
-import shapeless.ops.nat.Sum
-import shapeless.syntax.typeable
-import shapeless.Witness
 import simulacrum._
 import cats._
-import shapeless.Succ
 import cats.implicits._
 import higherkindness.droste._
 import higherkindness.droste.data._
-import shapeless._
 import breeze.linalg.DenseMatrix
 import breeze.linalg.DenseVector
 import scala.reflect.ClassTag
@@ -47,6 +40,8 @@ abstract sealed case class LabelledMatrix[LabelRow: ClassTag, LabelCol: ClassTag
     colLabels: Array[LabelCol],
     private val matrix: DenseMatrix[A]) {
   def print = println( matrix )
+  def column(col: Int ) = matrix( ::, col ).toDenseVector
+  def row(row: Int ) = matrix( row, :: ).inner
   def prepend(newRowLabels: Array[LabelRow], newColLabels: Array[LabelCol] ): LabelledMatrix[LabelRow, LabelCol, A] = {
     val paddedMatrix = utils.append( matrix, newRowLabels.length, newColLabels.length )
     new LabelledMatrix( newRowLabels ++ rowLabels, newColLabels ++ colLabels, paddedMatrix ) {}
@@ -64,7 +59,7 @@ abstract sealed case class LabelledMatrix[LabelRow: ClassTag, LabelCol: ClassTag
   override def toString = s"$matrix"
 }
 
-case class NeedlemanWunschMatrix[Label: ClassTag](private val labelledMatrix: matrices.LabelledMatrix[Label, Label, Int], defaultLabel: Label ) {
+abstract sealed case class NeedlemanWunschMatrix[Label: ClassTag](private val labelledMatrix: matrices.LabelledMatrix[Label, Label, Int], defaultLabel: Label ) {
   val rowLabels = labelledMatrix.rowLabels
   val colLabels = labelledMatrix.colLabels
   val columnVector: DenseVector[Int] = DenseVector( 0 +: labelledMatrix.rowLabels.zipWithIndex.map( v => (v._2 + 1) * -1 ) )
@@ -76,6 +71,11 @@ case class NeedlemanWunschMatrix[Label: ClassTag](private val labelledMatrix: ma
   horizontalVector.mapPairs {
     case ( index, v ) => matrix.update( 0, index, v )
   }
+}
+
+object NeedlemanWunschMatrix {
+  def apply[Label: ClassTag: Zero: Eq](placeholder: Label, left: Array[Label], right: Array[Label] ): NeedlemanWunschMatrix[Label] =
+    new NeedlemanWunschMatrix( matrices.LabelledMatrix.zeros( left, right ), placeholder ) {}
 }
 
 abstract sealed case class GraphMatrix[Label: ClassTag: Eq](private val matrix: LabelledMatrix[Int, Label, Int] ) {
@@ -97,7 +97,36 @@ abstract sealed case class GraphMatrix[Label: ClassTag: Eq](private val matrix: 
     newMatrix.update( newEdge - 1, endCol, 1 )
     new GraphMatrix( newMatrix ) {}
   }
-  def leaves: Set[List[Label]] = ???
+
+  private def pathToRoot(col: Int ): List[Label] = {
+    // this vector will be of the form [0, -1, -2, -3, 0, -4....], where 0 is the current column
+    // the goal is to find the dot product of this vector with the row vector corresponding to the
+    // outgoing edge
+    val colFinder: DenseVector[Int] = DenseVector( 0.until( matrix.cols ).toArray ).map( v => -v )
+    colFinder.update( col, 0 )
+    matrix
+      .column( col ) // column corresponding to the label
+      .toDenseVector
+      .data
+      .toList
+      .zipWithIndex
+      .collect {
+        case ( 1, index ) => // found the row with value 1, since we are looking for the incoming edge
+          val row = matrix.row( index ) // row vector corresponding the the incoming edge
+          val nextCol = row.dot( colFinder ) // the column where the value is -1, i.e. an outoging edge
+          matrix.colLabels( col ) :: pathToRoot( nextCol )
+      }
+      .flatten
+  }
+
+  def leaves: Array[List[Label]] = {
+    matrix.columnSum.toArray
+      .zip( matrix.colLabels )
+      .collect {
+        case ( 1, label ) => pathToRoot( indexedColLabels( label ) )
+      }
+  }
+
   def print = matrix.print
 }
 
