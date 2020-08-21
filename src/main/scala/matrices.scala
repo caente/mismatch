@@ -30,7 +30,10 @@ object utils {
 }
 
 object LabelledMatrix {
-  def zeros[LabelRow: ClassTag, LabelCol: ClassTag, A: ClassTag: Zero: Semiring](rowLabels: Array[LabelRow], colLabels: Array[LabelCol] ): LabelledMatrix[LabelRow, LabelCol, A] = {
+  def zeros[LabelRow: ClassTag, LabelCol: ClassTag, A: ClassTag: Zero: Semiring](
+      rowLabels: Array[LabelRow],
+      colLabels: Array[LabelCol]
+    ): LabelledMatrix[LabelRow, LabelCol, A] = {
     val matrix: DenseMatrix[A] = DenseMatrix.zeros[A]( rowLabels.length, colLabels.length )
     new LabelledMatrix( rowLabels, colLabels, matrix ) {}
   }
@@ -59,7 +62,9 @@ abstract sealed case class LabelledMatrix[LabelRow: ClassTag, LabelCol: ClassTag
   override def toString = s"$matrix"
 }
 
-abstract sealed case class NeedlemanWunschMatrix[Label: ClassTag](private val labelledMatrix: matrices.LabelledMatrix[Label, Label, Int], defaultLabel: Label ) {
+abstract sealed case class NeedlemanWunschMatrix[Label: ClassTag](
+    private val labelledMatrix: matrices.LabelledMatrix[Label, Label, Int],
+    defaultLabel: Label) {
   val rowLabels = labelledMatrix.rowLabels
   val colLabels = labelledMatrix.colLabels
   val columnVector: DenseVector[Int] = DenseVector( 0 +: labelledMatrix.rowLabels.zipWithIndex.map( v => (v._2 + 1) * -1 ) )
@@ -74,53 +79,65 @@ abstract sealed case class NeedlemanWunschMatrix[Label: ClassTag](private val la
 }
 
 object NeedlemanWunschMatrix {
-  def apply[Label: ClassTag: Zero: Eq](placeholder: Label, left: Array[Label], right: Array[Label] ): NeedlemanWunschMatrix[Label] =
+  def apply[Label: ClassTag: Eq](placeholder: Label, left: Array[Label], right: Array[Label] ): NeedlemanWunschMatrix[Label] =
     new NeedlemanWunschMatrix( matrices.LabelledMatrix.zeros( left, right ), placeholder ) {}
 }
 
 abstract sealed case class GraphMatrix[Label: ClassTag: Eq](private val matrix: LabelledMatrix[Int, Label, Int] ) {
   private val indexedColLabels = matrix.colLabels.zipWithIndex.toMap
-  def addEdge(start: Label, end: Label ): GraphMatrix[Label] = {
-    val startIndex: Option[Int] = indexedColLabels.get( start )
-    val endIndex: Option[Int] = indexedColLabels.get( end )
-    val newEdge = matrix.rowLabels.lastOption.map( _ + 1 ).getOrElse( 1 )
-    val newNodes = ( startIndex, endIndex ) match {
-      case ( Some( _ ), Some( _ ) ) => Array()
-      case ( Some( _ ), None )      => Array( end )
-      case ( None, Some( _ ) )      => Array( start )
-      case _                        => throw new IllegalArgumentException( "At least one node must exist" )
+  def addEdge(start: Label, end: Label ): GraphMatrix[Label] =
+    if (isEdge( start, end )) this
+    else {
+      val startIndex: Option[Int] = indexedColLabels.get( start )
+      val endIndex: Option[Int] = indexedColLabels.get( end )
+      val newEdge = matrix.rowLabels.lastOption.map( _ + 1 ).getOrElse( 1 )
+      val newNodes = ( startIndex, endIndex ) match {
+        case ( Some( _ ), Some( _ ) ) => Array()
+        case ( Some( _ ), None )      => Array( end )
+        case ( None, Some( _ ) )      => Array( start )
+        case _                        => throw new IllegalArgumentException( "At least one node must exist" )
+      }
+      val newMatrix: LabelledMatrix[Int, Label, Int] = matrix.append( Array( newEdge ), newNodes )
+      val startCol = startIndex.getOrElse( matrix.colLabels.length - 1 )
+      val endCol = endIndex.getOrElse( newMatrix.colLabels.length - 1 )
+      newMatrix.update( newEdge - 1, startCol, -1 )
+      newMatrix.update( newEdge - 1, endCol, 1 )
+      new GraphMatrix( newMatrix ) {}
     }
-    val newMatrix: LabelledMatrix[Int, Label, Int] = matrix.append( Array( newEdge ), newNodes )
-    val startCol = startIndex.getOrElse( matrix.colLabels.length - 1 )
-    val endCol = endIndex.getOrElse( newMatrix.colLabels.length - 1 )
-    newMatrix.update( newEdge - 1, startCol, -1 )
-    newMatrix.update( newEdge - 1, endCol, 1 )
-    new GraphMatrix( newMatrix ) {}
-  }
+  def isEdge(start: Label, end: Label ): Boolean = startOfEdge( end ) === Some( start )
 
-  private def pathToRoot(label: Label ): List[Label] = {
-    val col = indexedColLabels( label )
+  //find the row vector corresponding to the row where there is a 1
+  //in the column of label
+  private def incomingRowVector(label: Label ): Option[DenseVector[Int]] = {
+    for {
+      col <- indexedColLabels.get( label ).toList
+      data = matrix
+        .column( col ) // column corresponding to the label
+        .toDenseVector
+        .data
+        .toList
+        .zipWithIndex
+      ( 1, index ) <- data
+    } yield matrix.row( index )
+  }.headOption // there can only be a single row with a 1
+
+  private def startOfEdge(label: Label ): Option[Label] = {
     // this vector will be of the form [0, -1, -2, -3, 0, -4....], where 0 is the current column
     // the goal is to find the dot product of this vector with the row vector corresponding to the
     // outgoing edge
     val colFinder: DenseVector[Int] = DenseVector( 0.until( matrix.cols ).toArray ).map( v => -v )
-    colFinder.update( col, 0 )
-    matrix
-      .column( col ) // column corresponding to the label
-      .toDenseVector
-      .data
-      .toList
-      .zipWithIndex
-      .collect {
-        case ( 1, index ) => // found the row with value 1, since we are looking for the incoming edge, there can only be a single 1
-          val row = matrix.row( index ) // row vector corresponding the the incoming edge
-          val nextCol = row.dot( colFinder ) // the column where the value is -1, i.e. an outoging edge
-          label :: pathToRoot( matrix.colLabels( nextCol ) )
-      }
-      .flatten
+    for {
+      col <- indexedColLabels.get( label )
+      _ = colFinder.update( col, 0 )
+      row <- incomingRowVector( label )
+      nextCol = row.dot( colFinder ) // the column where the value is -1, i.e. an outoging edge
+    } yield matrix.colLabels( nextCol )
   }
 
-  def leaves: Array[List[Label]] = {
+  private def pathToRoot(label: Label ): List[Label] =
+    label :: startOfEdge( label ).toList.flatMap( pathToRoot )
+
+  val leaves: Array[List[Label]] = {
     matrix.columnSum.toArray
       .zip( matrix.colLabels )
       .collect {

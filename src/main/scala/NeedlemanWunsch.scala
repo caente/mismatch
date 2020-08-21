@@ -18,7 +18,7 @@ import matrices._
 
 object NeedlemanWunsch {
   case class Alignment[A](left: List[A], right: List[A] )
-  def apply[Label: ClassTag: Zero: Eq](placeholder: Label, left: Array[Label], right: Array[Label] ): Set[Alignment[Label]] = {
+  def apply[Label: ClassTag: Eq](placeholder: Label, left: Array[Label], right: Array[Label] ): Set[Alignment[Label]] = {
     val m = NeedlemanWunschMatrix( placeholder, left, right )
     val matrix = scoredMatrix( m )
     alignments(
