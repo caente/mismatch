@@ -41,7 +41,7 @@ object LabelledMatrix {
 abstract sealed case class LabelledMatrix[LabelRow: ClassTag, LabelCol: ClassTag, A: ClassTag: Zero: Semiring](
     rowLabels: Array[LabelRow],
     colLabels: Array[LabelCol],
-    private val matrix: DenseMatrix[A]) {
+    val matrix: DenseMatrix[A]) {
   def print = println( matrix )
   def column(col: Int ) = matrix( ::, col ).toDenseVector
   def row(row: Int ) = matrix( row, :: ).inner
@@ -83,10 +83,15 @@ object NeedlemanWunschMatrix {
     new NeedlemanWunschMatrix( matrices.LabelledMatrix.zeros( left, right ), placeholder ) {}
 }
 
-abstract sealed case class GraphMatrix[Label: ClassTag: Eq](private val matrix: LabelledMatrix[Int, Label, Int] ) {
-  private val indexedColLabels = matrix.colLabels.zipWithIndex.toMap
-  def addEdge(start: Label, end: Label ): GraphMatrix[Label] =
-    if (isEdge( start, end )) this
+abstract sealed case class GraphMatrix[Label](val matrix: LabelledMatrix[Int, Label, Int], private val adjacents: Map[Label, List[Label]] ) {
+  val labels = matrix.colLabels
+  ///val edges: Set[( Label, Label )] = ???
+  val indexedColLabels = matrix.colLabels.zipWithIndex.toMap
+  def addEdge(start: Label, end: Label )(implicit E: Eq[Label], C: ClassTag[Label] ): GraphMatrix[Label] = {
+    if (start === end && indexedColLabels.keySet.contains( start )) {
+      println( s"$start === $end" )
+      this
+    } else if (start =!= end && startOfEdge( end ) === Some( start )) this
     else {
       val startIndex: Option[Int] = indexedColLabels.get( start )
       val endIndex: Option[Int] = indexedColLabels.get( end )
@@ -95,16 +100,39 @@ abstract sealed case class GraphMatrix[Label: ClassTag: Eq](private val matrix: 
         case ( Some( _ ), Some( _ ) ) => Array()
         case ( Some( _ ), None )      => Array( end )
         case ( None, Some( _ ) )      => Array( start )
-        case _                        => throw new IllegalArgumentException( "At least one node must exist" )
+        case _                        => throw new IllegalArgumentException( s"At least one node must exist; start:$start end:$end" )
       }
       val newMatrix: LabelledMatrix[Int, Label, Int] = matrix.append( Array( newEdge ), newNodes )
       val startCol = startIndex.getOrElse( matrix.colLabels.length - 1 )
       val endCol = endIndex.getOrElse( newMatrix.colLabels.length - 1 )
       newMatrix.update( newEdge - 1, startCol, -1 )
       newMatrix.update( newEdge - 1, endCol, 1 )
-      new GraphMatrix( newMatrix ) {}
+      new GraphMatrix( newMatrix, adjacents.updated( start, end :: adjacents.getOrElse( start, Nil ) ) ) {}
     }
-  def isEdge(start: Label, end: Label ): Boolean = startOfEdge( end ) === Some( start )
+  }
+
+  private def dfsLeaves(m: DenseMatrix[Int], start: Label ): List[List[Label]] = {
+    val col = indexedColLabels( start )
+    val nextLabels: List[Option[Label]] =
+      matrix
+        .column( col )
+        .mapPairs {
+          case ( index, -1 ) =>
+            val row = matrix.row( index )
+            row.update( col, 0 )
+            val colFinder: DenseVector[Int] = DenseVector( 0.until( row.length ).toArray )
+            val nextCol = row.dot( colFinder )
+            Some( matrix.colLabels( nextCol ) )
+          case _ => None
+        }
+        .toArray
+        .toList
+    val m2 = DenseMatrix.horzcat( m( ::, 0 until col ), m( ::, col + 1 until m.cols ) )
+    nextLabels.flatMap {
+      case Some( nextLabel ) => dfsLeaves( m2, nextLabel ).map( start :: _ )
+      case _                 => Nil
+    }
+  }
 
   //find the row vector corresponding to the row where there is a 1
   //in the column of label
@@ -135,7 +163,7 @@ abstract sealed case class GraphMatrix[Label: ClassTag: Eq](private val matrix: 
   }
 
   private def pathToRoot(label: Label ): List[Label] =
-    label :: startOfEdge( label ).toList.flatMap( pathToRoot )
+    startOfEdge( label ).toList.flatMap( pathToRoot ) :+ label
 
   val leaves: Array[List[Label]] = {
     matrix.columnSum.toArray
@@ -149,6 +177,29 @@ abstract sealed case class GraphMatrix[Label: ClassTag: Eq](private val matrix: 
 }
 
 object GraphMatrix {
-  def single[Label: ClassTag: Eq](node: Label ): GraphMatrix[Label] =
-    new GraphMatrix( LabelledMatrix.zeros( Array(), Array( node ) ) ) {}
+  def single[Label: ClassTag](node: Label ): GraphMatrix[Label] =
+    new GraphMatrix( LabelledMatrix.zeros( Array(), Array( node ) ), Map( node -> Nil ) ) {}
+}
+
+object AdjacentGraph {
+  def single[Label](node: Label ): AdjacentGraph[Label] =
+    new AdjacentGraph( node, Map( node -> Vector.empty[Label] ) ) {}
+}
+sealed abstract case class AdjacentGraph[Label](root: Label, val data: Map[Label, Vector[Label]] ) {
+
+  def branches(start: Label ): Vector[List[Label]] = {
+    if (adjacents( start ).isEmpty) Vector( List( start ) )
+    else {
+      adjacents( start ).flatMap( a => branches( a ).map( start :: _ ) )
+    }
+  }
+  def adjacents(a: Label ): Vector[Label] = data.getOrElse( a, Vector() )
+
+  def addEdge(start: Label, end: Label ): AdjacentGraph[Label] = {
+    if (data.keySet.contains( start )) {
+      val newData = data.updated( start, data( start ).appended( end ) ).updated( end, adjacents( end ) )
+      new AdjacentGraph( root, newData ) {}
+    } else
+      throw new IllegalArgumentException( s"At least one node must exist; start:$start end:$end" )
+  }
 }

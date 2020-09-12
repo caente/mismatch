@@ -141,13 +141,13 @@ object test extends App {
   val tree =
     matrices.GraphMatrix
       .single( 'Foo )
-      .addEdge( 'Foo, 'a )
-      .addEdge( 'Foo, 'b )
-      .addEdge( 'a, 'c )
-      .addEdge( 'a, 'd )
-      .addEdge( 'b, 'f )
-      .addEdge( 'b, 'g )
-      .addEdge( 'c, 'e )
+     .addEdge( 'Foo, 'a )
+    // .addEdge( 'Foo, 'b )
+    // .addEdge( 'a, 'c )
+    // .addEdge( 'a, 'd )
+    // .addEdge( 'b, 'f )
+    // .addEdge( 'b, 'g )
+    // .addEdge( 'c, 'e )
   tree.print
   println( tree.leaves.toList )
   import NeedlemanWunsch._

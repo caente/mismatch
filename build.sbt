@@ -11,7 +11,9 @@ libraryDependencies ++= Seq(
   "com.lihaoyi" %% "pprint" % "0.5.9",
   "org.typelevel" %% "cats-core" % "2.1.1",
   "io.higherkindness" %% "droste-core" % "0.8.0",
-  "com.lihaoyi" % "ammonite" % "2.2.0" % "test" cross CrossVersion.full
+  "com.lihaoyi" % "ammonite" % "2.2.0" cross CrossVersion.full,
+  "org.scalactic" %% "scalactic" % "3.2.0",
+  "org.scalatest" %% "scalatest" % "3.2.0" % "test"
 )
 
 scalacOptions ++= Seq(
