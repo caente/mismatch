@@ -196,16 +196,16 @@ sealed abstract case class AdjacentGraph[Label: Eq](root: Label, val data: Map[L
   def topological(start: Label, acc: List[Label], visited: Set[Label] ): List[Label] =
     dfs( start, List.empty[Label], visited )
 
-  def dfs[F[_]](start: Label, acc: F[Label], visited: Set[Label] )(implicit monoid: Monoid[F[Label]], monad: Applicative[F] ): F[Label] = {
+  def dfs[F[_]](start: Label, acc: F[Label], visited: Set[Label] )(implicit M: Monoid[F[Label]], A: Applicative[F] ): F[Label] = {
     adjacents( start ) match {
-      case Nil => monad.pure( start ) |+| acc
+      case Nil => A.pure( start ) |+| acc
       case x :: xs =>
         if (visited.contains( x )) {
-          xs.foldLeft( monoid.empty )( ( f, v ) => dfs( v, monoid.empty, visited + start ) )
+          xs.foldLeft( M.empty )( ( f, v ) => dfs( v, M.empty, visited + start ) )
         } else {
           val top =
-            dfs( x, monad.pure( start ) |+| acc, visited + start )
-          xs.foldLeft( monoid.empty )( ( f, v ) => dfs( v, monoid.empty, visited + start ) ) |+| top
+            dfs( x, A.pure( start ) |+| acc, visited + start )
+          xs.foldLeft( M.empty )( ( f, v ) => dfs( v, M.empty, visited + start ) ) |+| top
         }
     }
   }
