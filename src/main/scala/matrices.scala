@@ -182,23 +182,54 @@ object GraphMatrix {
 }
 
 object AdjacentGraph {
-  def single[Label](node: Label ): AdjacentGraph[Label] =
-    new AdjacentGraph( node, Map( node -> Vector.empty[Label] ) ) {}
+  def single[Label: Eq](node: Label ): AdjacentGraph[Label] =
+    new AdjacentGraph( node, Map( node -> List.empty[Label] ) ) {}
 }
-sealed abstract case class AdjacentGraph[Label](root: Label, val data: Map[Label, Vector[Label]] ) {
+sealed abstract case class AdjacentGraph[Label: Eq](root: Label, val data: Map[Label, List[Label]] ) {
 
-  def branches(start: Label ): Vector[List[Label]] = {
-    if (adjacents( start ).isEmpty) Vector( List( start ) )
+  def branches(start: Label ): List[List[Label]] = {
+    if (adjacents( start ).isEmpty) List( List( start ) )
     else {
       adjacents( start ).flatMap( a => branches( a ).map( start :: _ ) )
     }
   }
-  def adjacents(a: Label ): Vector[Label] = data.getOrElse( a, Vector() )
+  def topological(start: Label, acc: List[Label], visited: Set[Label] ): List[Label] =
+    dfs( start, List.empty[Label], visited )
+
+  def dfs[F[_]](start: Label, acc: F[Label], visited: Set[Label] )(implicit monoid: Monoid[F[Label]], monad: Applicative[F] ): F[Label] = {
+    adjacents( start ) match {
+      case Nil => monad.pure( start ) |+| acc
+      case x :: xs =>
+        if (visited.contains( x )) {
+          xs.foldLeft( monoid.empty )( ( f, v ) => dfs( v, monoid.empty, visited + start ) )
+        } else {
+          val top =
+            dfs( x, monad.pure( start ) |+| acc, visited + start )
+          xs.foldLeft( monoid.empty )( ( f, v ) => dfs( v, monoid.empty, visited + start ) ) |+| top
+        }
+    }
+  }
+  def adjacents(a: Label ): List[Label] = data.getOrElse( a, List() )
+
+  def subGraph(start: Label ): AdjacentGraph[Label] = {
+    adjacents( start ).foldLeft( AdjacentGraph.single( start ) ) {
+      case ( graph, adj ) => graph.addGraph( start, subGraph( adj ) )
+    }
+  }
+
+  def addGraph(node: Label, graph: AdjacentGraph[Label] ): AdjacentGraph[Label] = {
+    addEdge( node, graph.root )
+    new AdjacentGraph( root, (addEdge( node, graph.root ).data |+| data) ) {}
+  }
 
   def addEdge(start: Label, end: Label ): AdjacentGraph[Label] = {
     if (data.keySet.contains( start )) {
-      val newData = data.updated( start, data( start ).appended( end ) ).updated( end, adjacents( end ) )
-      new AdjacentGraph( root, newData ) {}
+      if (start === end) {
+        this
+      } else {
+        val newData = data.updated( start, (end :: data( start )).distinct ).updated( end, adjacents( end ) )
+        new AdjacentGraph( root, newData ) {}
+      }
     } else
       throw new IllegalArgumentException( s"At least one node must exist; start:$start end:$end" )
   }

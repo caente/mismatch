@@ -151,12 +151,12 @@ object test extends App {
   tree.print
   println( tree.leaves.toList )
   import NeedlemanWunsch._
-  private val left = Array( 'a, 'b, 'c, 'd )
-  private val right = Array( 'e, 'b, 'f )
-  //private val left = Array( 'b, 'g )
-  //private val right = Array( 'b, 'h, 'i )
+ //private val left = Array( 'a, 'b, 'c, 'd )
+ //private val right = Array( 'e, 'b, 'f )
+  private val left = Array( 'Foo, 'a, 'c,'e,'d,'b,'h,'k )
+  private val right = Array( 'Foo, 'a, 'c,'j,'d,'b,'h,'i, 'k )
 
-  NeedlemanWunsch( '-, left, right ).foreach {
+  NeedlemanWunsch( '-, right, left ).foreach {
     case Alignment( left, right ) =>
       print(
         s"""(

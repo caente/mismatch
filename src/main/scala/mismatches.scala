@@ -6,9 +6,10 @@ import cats.implicits._
 import scala.reflect.ClassTag
 import algorithm.NeedlemanWunsch.Alignment
 
-sealed trait Diff[A] { def value: A }
+sealed trait Diff[A]
 case class Added[A](value: A ) extends Diff[A]
 case class Removed[A](value: A ) extends Diff[A]
+case class Exchanged[A](removed: A, added: A ) extends Diff[A]
 case class Same[A](value: A ) extends Diff[A]
 
 object Diff {
@@ -54,18 +55,44 @@ object Mismatches {
 
   }
   def apply[Label: ClassTag: Eq](placeholder: Label, left: AdjacentGraph[Label], right: AdjacentGraph[Label] ): AdjacentGraph[Diff[Label]] = {
-    val leftLeaves: Leaves[Label] = Leaves( left.branches( left.root ).map( _.drop( 1 ) ).toArray ) //dropping the root node
-    val rightLeaves: Leaves[Label] = Leaves( right.branches( right.root ).map( _.drop( 1 ) ).toArray ) //dropping the root node
+    val leftLeaves: Leaves[Label] = Leaves( left.branches( left.root ).toArray )
+    val rightLeaves: Leaves[Label] = Leaves( right.branches( right.root ).toArray )
     val leavesDiffs =
       NeedlemanWunsch( -1, leftLeaves.indexes, rightLeaves.indexes )
     leavesDiffs.foreach {
       case Alignment( left, right ) =>
         println( "-" * 30 )
-        pprint.pprintln( left.map( leftLeaves.leaves.getOrElse( _, placeholder ) ) )
-        pprint.pprintln( right.map( rightLeaves.leaves.getOrElse( _, placeholder ) ) )
+        val l = left.map( leftLeaves.leaves.getOrElse( _, Nil ) )
+        val r = right.map( rightLeaves.leaves.getOrElse( _, Nil ) )
+        val comparisons: List[Diff[Label]] =
+          l.zip( r )
+            .flatMap {
+              case ( Nil, Nil ) => Nil
+              case ( left, Nil ) =>
+                left.map( Removed( _ ) )
+              case ( Nil, right ) =>
+                right.map( Added( _ ) )
+              case notEmpty @ ( left, right ) =>
+                NeedlemanWunsch( placeholder, left.toArray, right.toArray ).flatMap {
+                  case Alignment( left, right ) => compare( left, right )
+                }
+            }
+        pprint.pprintln( comparisons.distinct )
+      //  .unzip match {
+      //  case ( left, right ) =>
+      //    pprint.pprintln( left, width = 10000 )
+      //    pprint.pprintln( right, width = 10000 )
+      //}
     }
     ???
   }
+  def compare[Label: Eq](left: List[Label], right: List[Label] ) = {
+    left.zip( right ).map {
+      case ( left, right ) if left === right => Same( left )
+      case ( left, right )                   => Exchanged( left, right )
+    }
+  }
+  /*
   def apply[Label: ClassTag: Eq](placeholder: Label, root: Label, left: GraphMatrix[Label], right: GraphMatrix[Label] ): GraphMatrix[Diff[Label]] = {
     val leftLeaves: Leaves[Label] = Leaves( left.leaves.map( _.drop( 1 ) ) ) //dropping the root node
     val rightLeaves: Leaves[Label] = Leaves( right.leaves.map( _.drop( 1 ) ) ) //dropping the root node
@@ -124,21 +151,11 @@ object Mismatches {
           }
       }
       ._1
-  }
+  }*/
 }
 
 object MismatchesTest extends App {
   val left =
-    matrices.AdjacentGraph
-      .single( 'Foo )
-      .addEdge( 'Foo, 'b )
-      .addEdge( 'Foo, 'a )
-      .addEdge( 'a, 'c )
-      .addEdge( 'a, 'd )
-      .addEdge( 'b, 'f )
-      .addEdge( 'b, 'g )
-      .addEdge( 'c, 'e )
-  val right =
     matrices.AdjacentGraph
       .single( 'Foo )
       .addEdge( 'Foo, 'a )
@@ -146,11 +163,22 @@ object MismatchesTest extends App {
       .addEdge( 'a, 'c )
       .addEdge( 'a, 'd )
       .addEdge( 'b, 'h )
+      .addEdge( 'b, 'g )
+      .addEdge( 'g, 'k )
+      .addEdge( 'c, 'e )
+  val right =
+    matrices.AdjacentGraph
+      .single( 'Foo )
+      .addEdge( 'Foo, 'a )
+      .addEdge( 'Foo, 'l )
+      .addEdge( 'a, 'c )
+      .addEdge( 'a, 'd )
+      .addEdge( 'l, 'h )
       .addEdge( 'c, 'j )
       .addEdge( 'h, 'i )
 
-  pprint.pprintln( left.branches( left.root ) )
-  pprint.pprintln( right.branches( right.root ) )
+// pprint.pprintln( left.branches( left.root ) )
+// pprint.pprintln( right.branches( right.root ) )
   //implicit val gr = new Mismatches.GraphOps[GraphMatrix] {
   //  def single[Label: ClassTag](label: Label ): GraphMatrix[Label] = GraphMatrix.single( label )
   //  def addEdge[Label: ClassTag: Eq](graph: GraphMatrix[Label] )(start: Label, end: Label ): GraphMatrix[Label] =
@@ -167,8 +195,33 @@ object MismatchesTest extends App {
   //    "g" -> left
   //  )
   //pprint.pprintln( left.leaves.map( _.drop( 1 ) ).toList )
-  
-  pprint.pprintln(left.data)
 
-  Mismatches( '-, left, right )
+  pprint.pprintln( left.subGraph( 'b ) )
+  val alignments = NeedlemanWunsch( '-, left.topological( 'Foo, Nil, Set() ).reverse.toArray, right.topological( 'Foo, Nil, Set() ).reverse.toArray )
+  case class Both[Label](lefts: Set[Label], rights: Set[Label] )
+  val compared =
+    alignments.foldLeft( Map.empty[Symbol, Both[Symbol]] ) {
+      case ( boths, Alignment( left, right ) ) =>
+        left.zip( right ).foldLeft( boths ) {
+          case ( boths, ( '-, right ) ) => boths
+          case ( boths, ( left, right ) ) =>
+            val both = boths.getOrElse( left, Both( Set(), Set() ) )
+            boths.updated(
+              left,
+              both.copy(
+                lefts = both.lefts + left,
+                rights = both.rights + right
+              )
+            )
+        }
+    }
+  pprint.pprintln( compared )
+  //alignments
+  //  .foreach {
+  //    case Alignment( left, right ) =>
+  //      println( "-" * 30 )
+  //      pprint.pprintln( left, width = 10000 )
+  //      pprint.pprintln( right, width = 10000 )
+  //  }
+//  Mismatches( '-, left, right )
 }
