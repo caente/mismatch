@@ -202,8 +202,33 @@ sealed abstract case class AdjacentGraph[Label: Eq](root: Label, val data: Map[L
       adjacents( start ).flatMap( a => branches( a ).map( start :: _ ) )
     }
   }
+
   def topological(start: Label ): List[Label] =
     dfs( start, List( start ), Set() )( ( l1, l2, acc ) => l2 :: acc ).result.reverse
+
+  def adjacents(a: Label ): List[Label] = data.getOrElse( a, List() )
+
+  def subGraph(start: Label ): AdjacentGraph[Label] = {
+    dfs( start, AdjacentGraph.single( start ), Set() ) { ( parent, child, newGraph ) =>
+      newGraph.addEdge( parent, child )
+    }.result
+  }
+
+  def addGraph(node: Label, graph: AdjacentGraph[Label] ): AdjacentGraph[Label] = {
+    ???
+  }
+
+  def addEdge(start: Label, end: Label ): AdjacentGraph[Label] = {
+    if (data.keySet.contains( start )) {
+      if (start === end) {
+        this
+      } else {
+        val newData = data.updated( start, (end :: data( start )).distinct ).updated( end, adjacents( end ) )
+        new AdjacentGraph( root, newData ) {}
+      }
+    } else
+      throw new IllegalArgumentException( s"At least one node must exist; start:$start end:$end" )
+  }
 
   private def dfs[F[_]](
       start: Label,
@@ -236,29 +261,5 @@ sealed abstract case class AdjacentGraph[Label: Eq](root: Label, val data: Map[L
         case ( GraphVisitation( graph, visited ), adj ) =>
           bfs( adj, graph, visited )( combine )
       }
-  }
-
-  def adjacents(a: Label ): List[Label] = data.getOrElse( a, List() )
-
-  def subGraph(start: Label ): AdjacentGraph[Label] = {
-    dfs( start, AdjacentGraph.single( start ), Set() ) { ( parent, child, newGraph ) =>
-      newGraph.addEdge( parent, child )
-    }.result
-  }
-
-  //def addGraph(node: Label, graph: AdjacentGraph[Label] ): AdjacentGraph[Label] = {
-  //  graph.dfs( graph.root, addEdge( node, graph.root ), Set() )( ( parent, child, newGraph ) => addGraph( label, newGraph ) )
-  //}
-
-  def addEdge(start: Label, end: Label ): AdjacentGraph[Label] = {
-    if (data.keySet.contains( start )) {
-      if (start === end) {
-        this
-      } else {
-        val newData = data.updated( start, (end :: data( start )).distinct ).updated( end, adjacents( end ) )
-        new AdjacentGraph( root, newData ) {}
-      }
-    } else
-      throw new IllegalArgumentException( s"At least one node must exist; start:$start end:$end" )
   }
 }
