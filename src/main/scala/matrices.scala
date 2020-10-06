@@ -67,7 +67,9 @@ abstract sealed case class NeedlemanWunschMatrix[Label: ClassTag](
     defaultLabel: Label) {
   val rowLabels = labelledMatrix.rowLabels
   val colLabels = labelledMatrix.colLabels
-  val columnVector: DenseVector[Int] = DenseVector( 0 +: labelledMatrix.rowLabels.zipWithIndex.map( v => (v._2 + 1) * -1 ) )
+  val columnVector: DenseVector[Int] = DenseVector(
+    0 +: labelledMatrix.rowLabels.zipWithIndex.map( v => (v._2 + 1) * -1 )
+  )
   val horizontalVector = DenseVector( 0 +: labelledMatrix.colLabels.zipWithIndex.map( v => (v._2 + 1) * -1 ) )
   val matrix = labelledMatrix.prepend( Array( defaultLabel ), Array( defaultLabel ) )
   columnVector.mapPairs {
@@ -79,11 +81,17 @@ abstract sealed case class NeedlemanWunschMatrix[Label: ClassTag](
 }
 
 object NeedlemanWunschMatrix {
-  def apply[Label: ClassTag: Eq](placeholder: Label, left: Array[Label], right: Array[Label] ): NeedlemanWunschMatrix[Label] =
+  def apply[Label: ClassTag: Eq](
+      placeholder: Label,
+      left: Array[Label],
+      right: Array[Label]
+    ): NeedlemanWunschMatrix[Label] =
     new NeedlemanWunschMatrix( matrices.LabelledMatrix.zeros( left, right ), placeholder ) {}
 }
 
-abstract sealed case class GraphMatrix[Label](val matrix: LabelledMatrix[Int, Label, Int], private val adjacents: Map[Label, List[Label]] ) {
+abstract sealed case class GraphMatrix[Label](
+    val matrix: LabelledMatrix[Int, Label, Int],
+    private val adjacents: Map[Label, List[Label]]) {
   val labels = matrix.colLabels
   ///val edges: Set[( Label, Label )] = ???
   val indexedColLabels = matrix.colLabels.zipWithIndex.toMap
@@ -197,18 +205,30 @@ sealed abstract case class AdjacentGraph[Label: Eq](root: Label, val data: Map[L
   def topological(start: Label ): List[Label] =
     dfs( start, List( start ), Set() )( ( l1, l2, acc ) => l2 :: acc ).result.reverse
 
-  def dfs[F[_]](start: Label, acc: F[Label], visited: Set[Label] )(combine: ( Label, Label, F[Label] ) => F[Label] ): GraphVisitation[F, Label] =
+  private def dfs[F[_]](
+      start: Label,
+      acc: F[Label],
+      visited: Set[Label]
+    )(combine: (Label, Label, F[Label] ) => F[Label]
+    ): GraphVisitation[F, Label] =
     adjacents( start )
       .foldLeft( GraphVisitation( acc, visited ) ) {
         case ( GraphVisitation( acc, visited ), adj ) if visited.contains( adj ) => GraphVisitation( acc, visited )
-        case ( GraphVisitation( acc, visited ), adj )                            => dfs( adj, combine( start, adj, acc ), visited + start )( combine )
+        case ( GraphVisitation( acc, visited ), adj ) =>
+          dfs( adj, combine( start, adj, acc ), visited + start )( combine )
       }
 
-  def bfs[F[_]](start: Label, acc: F[Label], visited: Set[Label] )(combine: ( Label, Label, F[Label] ) => F[Label] ): GraphVisitation[F, Label] = {
+  private def bfs[F[_]](
+      start: Label,
+      acc: F[Label],
+      visited: Set[Label]
+    )(combine: (Label, Label, F[Label] ) => F[Label]
+    ): GraphVisitation[F, Label] = {
     val visitation =
       adjacents( start ).foldLeft( GraphVisitation( acc, visited ) ) {
         case ( GraphVisitation( graph, visited ), adj ) if visited.contains( adj ) => GraphVisitation( graph, visited )
-        case ( GraphVisitation( graph, visited ), adj )                            => GraphVisitation( combine( start, adj, graph ), visited + adj )
+        case ( GraphVisitation( graph, visited ), adj ) =>
+          GraphVisitation( combine( start, adj, graph ), visited + adj )
       }
 
     adjacents( start )
