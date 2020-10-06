@@ -208,11 +208,11 @@ sealed abstract case class AdjacentGraph[Label: Eq](root: Label, val data: Map[L
   private def dfs[F[_]](
       start: Label,
       acc: F[Label],
-      visited: Set[Label]
+      initiallyVisited: Set[Label]
     )(combine: (Label, Label, F[Label] ) => F[Label]
     ): GraphVisitation[F, Label] =
     adjacents( start )
-      .foldLeft( GraphVisitation( acc, visited ) ) {
+      .foldLeft( GraphVisitation( acc, initiallyVisited ) ) {
         case ( GraphVisitation( acc, visited ), adj ) if visited.contains( adj ) => GraphVisitation( acc, visited )
         case ( GraphVisitation( acc, visited ), adj ) =>
           dfs( adj, combine( start, adj, acc ), visited + start )( combine )
@@ -221,18 +221,18 @@ sealed abstract case class AdjacentGraph[Label: Eq](root: Label, val data: Map[L
   private def bfs[F[_]](
       start: Label,
       acc: F[Label],
-      visited: Set[Label]
+      initiallyVisited: Set[Label]
     )(combine: (Label, Label, F[Label] ) => F[Label]
     ): GraphVisitation[F, Label] = {
-    val visitation =
-      adjacents( start ).foldLeft( GraphVisitation( acc, visited ) ) {
+    val visitedAdjacents =
+      adjacents( start ).foldLeft( GraphVisitation( acc, initiallyVisited ) ) {
         case ( GraphVisitation( graph, visited ), adj ) if visited.contains( adj ) => GraphVisitation( graph, visited )
         case ( GraphVisitation( graph, visited ), adj ) =>
           GraphVisitation( combine( start, adj, graph ), visited + adj )
       }
 
     adjacents( start )
-      .foldLeft( visitation ) {
+      .foldLeft( visitedAdjacents ) {
         case ( GraphVisitation( graph, visited ), adj ) =>
           bfs( adj, graph, visited )( combine )
       }
