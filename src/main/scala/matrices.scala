@@ -240,11 +240,6 @@ sealed abstract case class AdjacentGraph[Label: Eq](root: Label, val data: Map[L
 
   def adjacents(a: Label ): List[Label] = data.getOrElse( a, List() )
 
-  private implicit val monoid = new Monoid[AdjacentGraph[Label]] {
-    def combine(x: AdjacentGraph[Label], y: AdjacentGraph[Label] ): AdjacentGraph[Label] = x.addEdge( x.root, y.root )
-    def empty: AdjacentGraph[Label] = AdjacentGraph.single( root )
-  }
-
   def subGraph(start: Label ): AdjacentGraph[Label] = {
     dfs( start, AdjacentGraph.single( start ), Set() ) { ( parent, child, newGraph ) =>
       newGraph.addEdge( parent, child )
