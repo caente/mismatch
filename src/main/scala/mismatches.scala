@@ -196,8 +196,7 @@ object MismatchesTest extends App {
   //  )
   //pprint.pprintln( left.leaves.map( _.drop( 1 ) ).toList )
 
-  pprint.pprintln( left.subGraph( 'b ) )
-  val alignments = NeedlemanWunsch( '-, left.topological( 'Foo, Nil, Set() ).reverse.toArray, right.topological( 'Foo, Nil, Set() ).reverse.toArray )
+  val alignments = NeedlemanWunsch( '-, left.topological( 'Foo ).reverse.toArray, right.topological( 'Foo ).reverse.toArray )
   case class Both[Label](lefts: Set[Label], rights: Set[Label] )
   val compared =
     alignments.foldLeft( Map.empty[Symbol, Both[Symbol]] ) {
@@ -215,7 +214,7 @@ object MismatchesTest extends App {
             )
         }
     }
-  pprint.pprintln( compared )
+  pprint.pprintln( left.subGraph( 'a ) )
   //alignments
   //  .foreach {
   //    case Alignment( left, right ) =>

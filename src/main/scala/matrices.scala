@@ -193,34 +193,59 @@ sealed abstract case class AdjacentGraph[Label: Eq](root: Label, val data: Map[L
       adjacents( start ).flatMap( a => branches( a ).map( start :: _ ) )
     }
   }
-  def topological(start: Label, acc: List[Label], visited: Set[Label] ): List[Label] =
-    dfs( start, List.empty[Label], visited )
+  def topological(start: Label ): List[Label] =
+    dfs( start, List( start ), Set() )( ( l1, l2, acc ) => l2 :: acc )._1.reverse
 
-  def dfs[F[_]](start: Label, acc: F[Label], visited: Set[Label] )(implicit M: Monoid[F[Label]], A: Applicative[F] ): F[Label] = {
-    adjacents( start ) match {
-      case Nil => A.pure( start ) |+| acc
-      case x :: xs =>
-        if (visited.contains( x )) {
-          xs.foldLeft( M.empty )( ( f, v ) => dfs( v, M.empty, visited + start ) )
-        } else {
-          val top =
-            dfs( x, A.pure( start ) |+| acc, visited + start )
-          xs.foldLeft( M.empty )( ( f, v ) => dfs( v, M.empty, visited + start ) ) |+| top
-        }
-    }
+  def dfs[F[_]](
+      start: Label,
+      acc: F[Label],
+      visited: Set[Label]
+    )(combine: (Label, Label, F[Label] ) => F[Label]
+    )(implicit M: Monoid[F[Label]]
+    ): ( F[Label], Set[Label] ) = {
+    adjacents( start )
+      .foldLeft( ( acc, visited ) ) {
+        case ( ( acc, visited ), adj ) if visited.contains( adj ) => ( acc, visited )
+        case ( ( acc, visited ), adj )                            => dfs( adj, combine( start, adj, acc ), visited + start )( combine )
+      }
   }
+
+  def bfs[F[_]](
+      start: Label,
+      acc: F[Label],
+      visited: Set[Label]
+    )(combine: (Label, Label, F[Label] ) => F[Label]
+    )(implicit M: Monoid[F[Label]]
+    ): ( F[Label], Set[Label] ) = {
+    val ( current, currentVisited ) =
+      adjacents( start ).foldLeft( ( acc, visited ) ) {
+        case ( ( graph, visited ), adj ) if visited.contains( adj ) => ( graph, visited )
+        case ( ( graph, visited ), adj )                            => ( combine( start, adj, graph ), visited + adj )
+      }
+
+    adjacents( start )
+      .foldLeft( ( current, currentVisited ) ) {
+        case ( ( graph, visited ), adj ) =>
+          bfs( adj, graph, visited )( combine )
+      }
+  }
+
   def adjacents(a: Label ): List[Label] = data.getOrElse( a, List() )
 
-  def subGraph(start: Label ): AdjacentGraph[Label] = {
-    adjacents( start ).foldLeft( AdjacentGraph.single( start ) ) {
-      case ( graph, adj ) => graph.addGraph( start, subGraph( adj ) )
-    }
+  private implicit val monoid = new Monoid[AdjacentGraph[Label]] {
+    def combine(x: AdjacentGraph[Label], y: AdjacentGraph[Label] ): AdjacentGraph[Label] = x.addEdge( x.root, y.root )
+    def empty: AdjacentGraph[Label] = AdjacentGraph.single( root )
   }
 
-  def addGraph(node: Label, graph: AdjacentGraph[Label] ): AdjacentGraph[Label] = {
-    addEdge( node, graph.root )
-    new AdjacentGraph( root, (addEdge( node, graph.root ).data |+| data) ) {}
+  def subGraph(start: Label ): AdjacentGraph[Label] = {
+    bfs( start, AdjacentGraph.single( start ), Set() ) { ( parent, child, newGraph ) =>
+      newGraph.addEdge( parent, child )
+    }._1
   }
+
+  //def addGraph(node: Label, graph: AdjacentGraph[Label] ): AdjacentGraph[Label] = {
+  //  graph.dfs( graph.root, addEdge( node, graph.root ), Set() )( ( parent, child, newGraph ) => addGraph( label, newGraph ) )
+  //}
 
   def addEdge(start: Label, end: Label ): AdjacentGraph[Label] = {
     if (data.keySet.contains( start )) {
