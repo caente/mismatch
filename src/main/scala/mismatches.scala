@@ -214,7 +214,7 @@ object MismatchesTest extends App {
             )
         }
     }
-  pprint.pprintln( left.subGraph( 'a ) )
+  pprint.pprintln( left.topological( 'a ) )
   //alignments
   //  .foreach {
   //    case Alignment( left, right ) =>

@@ -204,7 +204,7 @@ sealed abstract case class AdjacentGraph[Label: Eq](root: Label, val data: Map[L
   }
 
   def topological(start: Label ): List[Label] =
-    dfs( start, List( start ), Set() )( ( l1, l2, acc ) => l2 :: acc ).result.reverse
+    dfs( start, List( start ), Set() )( ( _, child, acc ) => child :: acc ).result.reverse
 
   def adjacents(a: Label ): List[Label] = data.getOrElse( a, List() )
 
