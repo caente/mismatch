@@ -208,7 +208,7 @@ object MismatchesTest extends App {
       right.topological( right.root ).toArray
     )
   case class Exchange[Label](exchanged: Set[Label] )
-  val compared =
+  val compared: Map[Symbol, Exchange[Symbol]] =
     alignments.foldLeft( Map.empty[Symbol, Exchange[Symbol]] ) {
       case ( boths, Alignment( left, right ) ) =>
         left.zip( right ).foldLeft( boths ) {
@@ -227,18 +227,18 @@ object MismatchesTest extends App {
   pprint.pprintln( right.topological( right.root ) )
   pprint.pprintln( compared )
   var visited = Set.empty[Symbol]
-  val newGraph =
+  val newGraph: GraphVisitation[AdjacentGraph, Symbol] =
     left.dfs( left.root, AdjacentGraph.single( left.root ), Set() ) { ( parent, child, newGraph ) =>
       compared( child ) match {
         case Exchange( exch ) if exch.contains( child ) =>
-          newGraph.addEdge( parent, child )
+          newGraph.addEdge( parent, child ) //same
         case Exchange( exch ) if !exch.contains( child ) =>
-          exch.foldLeft( newGraph.addEdge( parent, child ) ) {
+          exch.foldLeft( newGraph.addEdge( parent, child ) ) { //deleted/added
             case ( g, '- )                         => g
             case ( g, r ) if visited.contains( r ) => g
-            case ( g, r )                          => 
+            case ( g, r ) =>
               visited += r
-              g.addGraph( parent, right.subGraph( r ) )
+              g.addSubGraph( parent, right.subGraph( r ) )
           }
       }
     }

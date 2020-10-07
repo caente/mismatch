@@ -213,7 +213,7 @@ sealed abstract case class AdjacentGraph[Label: Eq](root: Label, val data: Map[L
       newGraph.addEdge( parent, child )
     }.result
 
-  def addGraph(node: Label, graph: AdjacentGraph[Label] ): AdjacentGraph[Label] =
+  def addSubGraph(node: Label, graph: AdjacentGraph[Label] ): AdjacentGraph[Label] =
     graph
       .dfs( graph.root, addEdge( node, graph.root ), Set() )(
         ( parent, child, newGraph ) => newGraph.addEdge( parent, child )
