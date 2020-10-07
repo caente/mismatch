@@ -54,7 +54,11 @@ object Mismatches {
       }
 
   }
-  def apply[Label: ClassTag: Eq](placeholder: Label, left: AdjacentGraph[Label], right: AdjacentGraph[Label] ): AdjacentGraph[Diff[Label]] = {
+  def apply[Label: ClassTag: Eq](
+      placeholder: Label,
+      left: AdjacentGraph[Label],
+      right: AdjacentGraph[Label]
+    ): AdjacentGraph[Diff[Label]] = {
     val leftLeaves: Leaves[Label] = Leaves( left.branches( left.root ).toArray )
     val rightLeaves: Leaves[Label] = Leaves( right.branches( right.root ).toArray )
     val leavesDiffs =
@@ -158,19 +162,20 @@ object MismatchesTest extends App {
   val left =
     matrices.AdjacentGraph
       .single( 'Foo )
-      .addEdge( 'Foo, 'a )
       .addEdge( 'Foo, 'b )
+      .addEdge( 'Foo, 'a )
       .addEdge( 'a, 'c )
       .addEdge( 'a, 'd )
       .addEdge( 'b, 'h )
       .addEdge( 'b, 'g )
       .addEdge( 'g, 'k )
       .addEdge( 'c, 'e )
+
   val right =
     matrices.AdjacentGraph
       .single( 'Foo )
-      .addEdge( 'Foo, 'a )
       .addEdge( 'Foo, 'l )
+      .addEdge( 'Foo, 'a )
       .addEdge( 'a, 'c )
       .addEdge( 'a, 'd )
       .addEdge( 'l, 'h )
@@ -196,25 +201,48 @@ object MismatchesTest extends App {
   //  )
   //pprint.pprintln( left.leaves.map( _.drop( 1 ) ).toList )
 
-  val alignments = NeedlemanWunsch( '-, left.topological( 'Foo ).reverse.toArray, right.topological( 'Foo ).reverse.toArray )
-  case class Both[Label](lefts: Set[Label], rights: Set[Label] )
+  val alignments =
+    NeedlemanWunsch(
+      '-,
+      left.topological( left.root ).toArray,
+      right.topological( right.root ).toArray
+    )
+  case class Exchange[Label](exchanged: Set[Label] )
   val compared =
-    alignments.foldLeft( Map.empty[Symbol, Both[Symbol]] ) {
+    alignments.foldLeft( Map.empty[Symbol, Exchange[Symbol]] ) {
       case ( boths, Alignment( left, right ) ) =>
         left.zip( right ).foldLeft( boths ) {
           case ( boths, ( '-, right ) ) => boths
           case ( boths, ( left, right ) ) =>
-            val both = boths.getOrElse( left, Both( Set(), Set() ) )
+            val both = boths.getOrElse( left, Exchange( Set.empty[Symbol] ) )
             boths.updated(
               left,
               both.copy(
-                lefts = both.lefts + left,
-                rights = both.rights + right
+                exchanged = both.exchanged + right
               )
             )
         }
     }
-  pprint.pprintln( left.topological( 'a ) )
+  pprint.pprintln( left.topological( left.root ) )
+  pprint.pprintln( right.topological( right.root ) )
+  pprint.pprintln( compared )
+  var visited = Set.empty[Symbol]
+  val newGraph =
+    left.dfs( left.root, AdjacentGraph.single( left.root ), Set() ) { ( parent, child, newGraph ) =>
+      compared( child ) match {
+        case Exchange( exch ) if exch.contains( child ) =>
+          newGraph.addEdge( parent, child )
+        case Exchange( exch ) if !exch.contains( child ) =>
+          exch.foldLeft( newGraph.addEdge( parent, child ) ) {
+            case ( g, '- )                         => g
+            case ( g, r ) if visited.contains( r ) => g
+            case ( g, r )                          => 
+              visited += r
+              g.addGraph( parent, right.subGraph( r ) )
+          }
+      }
+    }
+  pprint.pprintln( newGraph )
   //alignments
   //  .foreach {
   //    case Alignment( left, right ) =>

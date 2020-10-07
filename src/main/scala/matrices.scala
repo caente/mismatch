@@ -208,15 +208,17 @@ sealed abstract case class AdjacentGraph[Label: Eq](root: Label, val data: Map[L
 
   def adjacents(a: Label ): List[Label] = data.getOrElse( a, List() )
 
-  def subGraph(start: Label ): AdjacentGraph[Label] = {
+  def subGraph(start: Label ): AdjacentGraph[Label] =
     dfs( start, AdjacentGraph.single( start ), Set() ) { ( parent, child, newGraph ) =>
       newGraph.addEdge( parent, child )
     }.result
-  }
 
-  def addGraph(node: Label, graph: AdjacentGraph[Label] ): AdjacentGraph[Label] = {
-    ???
-  }
+  def addGraph(node: Label, graph: AdjacentGraph[Label] ): AdjacentGraph[Label] =
+    graph
+      .dfs( graph.root, addEdge( node, graph.root ), Set() )(
+        ( parent, child, newGraph ) => newGraph.addEdge( parent, child )
+      )
+      .result
 
   def addEdge(start: Label, end: Label ): AdjacentGraph[Label] = {
     if (data.keySet.contains( start )) {
@@ -230,7 +232,7 @@ sealed abstract case class AdjacentGraph[Label: Eq](root: Label, val data: Map[L
       throw new IllegalArgumentException( s"At least one node must exist; start:$start end:$end" )
   }
 
-  private def dfs[F[_]](
+  def dfs[F[_]](
       start: Label,
       acc: F[Label],
       initiallyVisited: Set[Label]
@@ -243,7 +245,7 @@ sealed abstract case class AdjacentGraph[Label: Eq](root: Label, val data: Map[L
           dfs( adj, combine( start, adj, acc ), visited + start )( combine )
       }
 
-  private def bfs[F[_]](
+  def bfs[F[_]](
       start: Label,
       acc: F[Label],
       initiallyVisited: Set[Label]
