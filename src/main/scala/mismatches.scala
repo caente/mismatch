@@ -173,13 +173,13 @@ object MismatchesTest extends App {
   val right =
     matrices.AdjacentGraph
       .single( 'Foo )
-      .addEdge( 'Foo, 'b )
+      .addEdge( 'Foo, 'l )
       .addEdge( 'Foo, 'a )
       .addEdge( 'a, 'c )
       .addEdge( 'a, 'd )
-      .addEdge( 'b, 'h )
+      .addEdge( 'l, 'x )
       .addEdge( 'c, 'j )
-      .addEdge( 'h, 'i )
+      .addEdge( 'x, 'i )
 
 // pprint.pprintln( left.branches( left.root ) )
 // pprint.pprintln( right.branches( right.root ) )
@@ -246,20 +246,21 @@ object MismatchesTest extends App {
             case ( g, r ) if visited.contains( r ) => g
             case ( g, r ) =>
               visited += r
-              g.addSubGraph( Diff.same( parent ), right.subGraph( r ).map( Diff.added( _ ) ) )
+              //TODO: filter out the visited from right.subGraph(r)
+              g.addSubGraph( parentDiff, right.subGraph( r ).map( Diff.added( _ ) ) )
           }
       }
     }
-  compared( '- ).exchanged.foldLeft( newGraph ) { ( g, r ) =>
-    right.dfs( right.root, g.result, Set() )(
-      combine = ( parent, child, visitation ) =>
-        if (child === r) {
-          val commonParent: Diff[Symbol] = ???
-          val extra: AdjacentGraph[Diff[Symbol]] = right.subGraph( commonParent.value ).map( Diff.added )
-          visitation.addSubGraph( commonParent, extra )
-        } else visitation
-    )
-  }
+  //compared( '- ).exchanged.foldLeft( newGraph ) { ( g, r ) =>
+  //  right.dfs( right.root, g.result, Set() )(
+  //    combine = ( parent, child, visitation ) =>
+  //      if (child === r) {
+  //        val commonParent: Diff[Symbol] = ???
+  //        val extra: AdjacentGraph[Diff[Symbol]] = right.subGraph( commonParent.value ).map( Diff.added )
+  //        visitation.addSubGraph( commonParent, extra )
+  //      } else visitation
+  //  )
+  //}
   pprint.pprintln( newGraph )
   pprint.pprintln( left )
   pprint.pprintln( right )
