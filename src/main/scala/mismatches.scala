@@ -6,10 +6,9 @@ import cats.implicits._
 import scala.reflect.ClassTag
 import algorithm.NeedlemanWunsch.Alignment
 
-sealed trait Diff[A]
+sealed trait Diff[A] { def value: A }
 case class Added[A](value: A ) extends Diff[A]
 case class Removed[A](value: A ) extends Diff[A]
-case class Exchanged[A](removed: A, added: A ) extends Diff[A]
 case class Same[A](value: A ) extends Diff[A]
 
 object Diff {
@@ -54,48 +53,48 @@ object Mismatches {
       }
 
   }
-  def apply[Label: ClassTag: Eq](
-      placeholder: Label,
-      left: AdjacentGraph[Label],
-      right: AdjacentGraph[Label]
-    ): AdjacentGraph[Diff[Label]] = {
-    val leftLeaves: Leaves[Label] = Leaves( left.branches( left.root ).toArray )
-    val rightLeaves: Leaves[Label] = Leaves( right.branches( right.root ).toArray )
-    val leavesDiffs =
-      NeedlemanWunsch( -1, leftLeaves.indexes, rightLeaves.indexes )
-    leavesDiffs.foreach {
-      case Alignment( left, right ) =>
-        println( "-" * 30 )
-        val l = left.map( leftLeaves.leaves.getOrElse( _, Nil ) )
-        val r = right.map( rightLeaves.leaves.getOrElse( _, Nil ) )
-        val comparisons: List[Diff[Label]] =
-          l.zip( r )
-            .flatMap {
-              case ( Nil, Nil ) => Nil
-              case ( left, Nil ) =>
-                left.map( Removed( _ ) )
-              case ( Nil, right ) =>
-                right.map( Added( _ ) )
-              case notEmpty @ ( left, right ) =>
-                NeedlemanWunsch( placeholder, left.toArray, right.toArray ).flatMap {
-                  case Alignment( left, right ) => compare( left, right )
-                }
-            }
-        pprint.pprintln( comparisons.distinct )
-      //  .unzip match {
-      //  case ( left, right ) =>
-      //    pprint.pprintln( left, width = 10000 )
-      //    pprint.pprintln( right, width = 10000 )
-      //}
-    }
-    ???
-  }
-  def compare[Label: Eq](left: List[Label], right: List[Label] ) = {
-    left.zip( right ).map {
-      case ( left, right ) if left === right => Same( left )
-      case ( left, right )                   => Exchanged( left, right )
-    }
-  }
+  //def apply[Label: ClassTag: Eq](
+  //    placeholder: Label,
+  //    left: AdjacentGraph[Label],
+  //    right: AdjacentGraph[Label]
+  //  ): AdjacentGraph[Diff[Label]] = {
+  //  val leftLeaves: Leaves[Label] = Leaves( left.branches( left.root ).toArray )
+  //  val rightLeaves: Leaves[Label] = Leaves( right.branches( right.root ).toArray )
+  //  val leavesDiffs =
+  //    NeedlemanWunsch( -1, leftLeaves.indexes, rightLeaves.indexes )
+  //  leavesDiffs.foreach {
+  //    case Alignment( left, right ) =>
+  //      println( "-" * 30 )
+  //      val l = left.map( leftLeaves.leaves.getOrElse( _, Nil ) )
+  //      val r = right.map( rightLeaves.leaves.getOrElse( _, Nil ) )
+  //      val comparisons: List[Diff[Label]] =
+  //        l.zip( r )
+  //          .flatMap {
+  //            case ( Nil, Nil ) => Nil
+  //            case ( left, Nil ) =>
+  //              left.map( Removed( _ ) )
+  //            case ( Nil, right ) =>
+  //              right.map( Added( _ ) )
+  //            case notEmpty @ ( left, right ) =>
+  //              NeedlemanWunsch( placeholder, left.toArray, right.toArray ).flatMap {
+  //                case Alignment( left, right ) => compare( left, right )
+  //              }
+  //          }
+  //      pprint.pprintln( comparisons.distinct )
+  //    //  .unzip match {
+  //    //  case ( left, right ) =>
+  //    //    pprint.pprintln( left, width = 10000 )
+  //    //    pprint.pprintln( right, width = 10000 )
+  //    //}
+  //  }
+  //  ???
+  //}
+  //def compare[Label: Eq](left: List[Label], right: List[Label] ) = {
+  //  left.zip( right ).map {
+  //    case ( left, right ) if left === right => Same( left )
+  //    case ( left, right )                   => Exchanged( left, right )
+  //  }
+  //}
   /*
   def apply[Label: ClassTag: Eq](placeholder: Label, root: Label, left: GraphMatrix[Label], right: GraphMatrix[Label] ): GraphMatrix[Diff[Label]] = {
     val leftLeaves: Leaves[Label] = Leaves( left.leaves.map( _.drop( 1 ) ) ) //dropping the root node
@@ -174,11 +173,11 @@ object MismatchesTest extends App {
   val right =
     matrices.AdjacentGraph
       .single( 'Foo )
-      .addEdge( 'Foo, 'l )
+      .addEdge( 'Foo, 'b )
       .addEdge( 'Foo, 'a )
       .addEdge( 'a, 'c )
       .addEdge( 'a, 'd )
-      .addEdge( 'l, 'h )
+      .addEdge( 'b, 'h )
       .addEdge( 'c, 'j )
       .addEdge( 'h, 'i )
 
@@ -227,22 +226,34 @@ object MismatchesTest extends App {
   pprint.pprintln( right.topological( right.root ) )
   pprint.pprintln( compared )
   var visited = Set.empty[Symbol]
-  val newGraph: GraphVisitation[AdjacentGraph, Symbol] =
-    left.dfs( left.root, AdjacentGraph.single( left.root ), Set() ) { ( parent, child, newGraph ) =>
+  lazy val newGraph: GraphVisitation[AdjacentGraph, Symbol, Diff[Symbol]] =
+    left.dfs( left.root, AdjacentGraph.single( Diff.same( left.root ) ), Set() ) { ( parent, child, newGraph ) =>
       compared( child ) match {
         case Exchange( exch ) if exch.contains( child ) =>
-          newGraph.addEdge( parent, child ) //same
+          val parentDiff =
+            newGraph
+              .find( _.value === parent )
+              .result
+              .getOrElse( throw new RuntimeException( s"Parent not found: $parent + $newGraph" ) )
+          newGraph.addEdge( parentDiff, Diff.same( child ) ) //same
         case Exchange( exch ) if !exch.contains( child ) =>
-          exch.foldLeft( newGraph.addEdge( parent, child ) ) { //deleted/added
+          val parentDiff =
+            newGraph
+              .find( _.value === parent )
+              .result
+              .getOrElse( throw new RuntimeException( s"Parent not found: $parent + $newGraph" ) )
+          exch.foldLeft( newGraph.addEdge( parentDiff, Diff.removed( child ) ) ) { //deleted/added
             case ( g, '- )                         => g
             case ( g, r ) if visited.contains( r ) => g
             case ( g, r ) =>
               visited += r
-              g.addSubGraph( parent, right.subGraph( r ) )
+              g.addSubGraph( Diff.same( parent ), right.subGraph( r ).map( Diff.added( _ ) ) )
           }
       }
     }
   pprint.pprintln( newGraph )
+  pprint.pprintln( left )
+  pprint.pprintln( right )
   //alignments
   //  .foreach {
   //    case Alignment( left, right ) =>

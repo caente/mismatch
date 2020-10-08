@@ -193,7 +193,7 @@ object AdjacentGraph {
   def single[Label: Eq](node: Label ): AdjacentGraph[Label] =
     new AdjacentGraph( node, Map( node -> List.empty[Label] ) ) {}
 }
-case class GraphVisitation[F[_], Label](result: F[Label], visited: Set[Label] )
+case class GraphVisitation[F[_], Label, B](result: F[B], visited: Set[Label] )
 
 sealed abstract case class AdjacentGraph[Label: Eq](root: Label, val data: Map[Label, List[Label]] ) {
   def branches(start: Label ): List[List[Label]] = {
@@ -220,6 +220,18 @@ sealed abstract case class AdjacentGraph[Label: Eq](root: Label, val data: Map[L
       )
       .result
 
+  def map[B: Eq](f: Label => B ): AdjacentGraph[B] =
+    dfs( root, AdjacentGraph.single( f( root ) ), Set() )(
+      ( parent, child, graph ) => graph.addEdge( f( parent ), f( child ) )
+    ).result
+
+  def find(f: Label => Boolean ) =
+    dfs( root, Option.empty[Label], Set() )(
+      combine = ( parent, node, result ) =>
+        result.orElse( Option.when( f( parent ) )( parent ) ).orElse( Option.when( f( node ) )( node ) ),
+      stop = (result) => result.isDefined
+    )
+
   def addEdge(start: Label, end: Label ): AdjacentGraph[Label] = {
     if (data.keySet.contains( start )) {
       if (start === end) {
@@ -232,25 +244,27 @@ sealed abstract case class AdjacentGraph[Label: Eq](root: Label, val data: Map[L
       throw new IllegalArgumentException( s"At least one node must exist; start:$start end:$end" )
   }
 
-  def dfs[F[_]](
+  def dfs[F[_], B](
       start: Label,
-      acc: F[Label],
+      acc: F[B],
       initiallyVisited: Set[Label]
-    )(combine: (Label, Label, F[Label] ) => F[Label]
-    ): GraphVisitation[F, Label] =
+    )(combine: (Label, Label, F[B] ) => F[B],
+      stop: F[B] => Boolean = (_: F[B]) => false
+    ): GraphVisitation[F, Label, B] =
     adjacents( start )
-      .foldLeft( GraphVisitation( acc, initiallyVisited ) ) {
-        case ( GraphVisitation( acc, visited ), adj ) if visited.contains( adj ) => GraphVisitation( acc, visited )
+      .foldLeft( GraphVisitation( combine( start, start, acc ), initiallyVisited ) ) {
+        case ( GraphVisitation( acc, visited ), adj ) if visited.contains( adj ) || stop( acc ) =>
+          GraphVisitation( acc, visited )
         case ( GraphVisitation( acc, visited ), adj ) =>
-          dfs( adj, combine( start, adj, acc ), visited + start )( combine )
+          dfs( adj, combine( start, adj, acc ), visited + start )( combine, stop )
       }
 
-  def bfs[F[_]](
+  def bfs[F[_], B](
       start: Label,
-      acc: F[Label],
+      acc: F[B],
       initiallyVisited: Set[Label]
-    )(combine: (Label, Label, F[Label] ) => F[Label]
-    ): GraphVisitation[F, Label] = {
+    )(combine: (Label, Label, F[B] ) => F[B]
+    ): GraphVisitation[F, Label, B] = {
     val visitedAdjacents =
       adjacents( start ).foldLeft( GraphVisitation( acc, initiallyVisited ) ) {
         case ( GraphVisitation( graph, visited ), adj ) if visited.contains( adj ) => GraphVisitation( graph, visited )
