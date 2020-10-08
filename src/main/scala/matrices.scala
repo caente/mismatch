@@ -225,12 +225,15 @@ sealed abstract case class AdjacentGraph[Label: Eq](root: Label, val data: Map[L
       ( parent, child, graph ) => graph.addEdge( f( parent ), f( child ) )
     ).result
 
-  def find(f: Label => Boolean ) =
-    dfs( root, Option.empty[Label], Set() )(
-      combine = ( parent, node, result ) =>
-        result.orElse( Option.when( f( parent ) )( parent ) ).orElse( Option.when( f( node ) )( node ) ),
-      stop = (result) => result.isDefined
-    )
+  def find(f: Label => Boolean ): GraphVisitation[Option, Label, Label] =
+    if (f( root ))
+      GraphVisitation( Some( root ), Set() )
+    else
+      dfs( root, Option.empty[Label], Set() )(
+        combine = ( parent, node, result ) =>
+          result.orElse( Option.when( f( parent ) )( parent ) ).orElse( Option.when( f( node ) )( node ) ),
+        stop = (result) => result.isDefined
+      )
 
   def addEdge(start: Label, end: Label ): AdjacentGraph[Label] = {
     if (data.keySet.contains( start )) {
@@ -252,7 +255,7 @@ sealed abstract case class AdjacentGraph[Label: Eq](root: Label, val data: Map[L
       stop: F[B] => Boolean = (_: F[B]) => false
     ): GraphVisitation[F, Label, B] =
     adjacents( start )
-      .foldLeft( GraphVisitation( combine( start, start, acc ), initiallyVisited ) ) {
+      .foldLeft( GraphVisitation( acc, initiallyVisited ) ) {
         case ( GraphVisitation( acc, visited ), adj ) if visited.contains( adj ) || stop( acc ) =>
           GraphVisitation( acc, visited )
         case ( GraphVisitation( acc, visited ), adj ) =>
