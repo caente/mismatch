@@ -211,7 +211,6 @@ object MismatchesTest extends App {
     alignments.foldLeft( Map.empty[Symbol, Exchange[Symbol]] ) {
       case ( boths, Alignment( left, right ) ) =>
         left.zip( right ).foldLeft( boths ) {
-          case ( boths, ( '-, right ) ) => boths
           case ( boths, ( left, right ) ) =>
             val both = boths.getOrElse( left, Exchange( Set.empty[Symbol] ) )
             boths.updated(
@@ -251,6 +250,16 @@ object MismatchesTest extends App {
           }
       }
     }
+  compared( '- ).exchanged.foldLeft( newGraph ) { ( g, r ) =>
+    right.dfs( right.root, g.result, Set() )(
+      combine = ( parent, child, visitation ) =>
+        if (child === r) {
+          val commonParent: Diff[Symbol] = ???
+          val extra: AdjacentGraph[Diff[Symbol]] = right.subGraph( commonParent.value ).map( Diff.added )
+          visitation.addSubGraph( commonParent, extra )
+        } else visitation
+    )
+  }
   pprint.pprintln( newGraph )
   pprint.pprintln( left )
   pprint.pprintln( right )
