@@ -158,7 +158,7 @@ object Mismatches {
 }
 
 object MismatchesTest extends App {
-  val left =
+  val A =
     matrices.AdjacentGraph
       .single( 'Foo )
       .addEdge( 'Foo, 'b )
@@ -170,7 +170,7 @@ object MismatchesTest extends App {
       .addEdge( 'g, 'k )
       .addEdge( 'c, 'e )
 
-  val right =
+  val B =
     matrices.AdjacentGraph
       .single( 'Foo )
       .addEdge( 'Foo, 'l )
@@ -203,8 +203,8 @@ object MismatchesTest extends App {
   val alignments =
     NeedlemanWunsch(
       '-,
-      left.topological( left.root ).toArray,
-      right.topological( right.root ).toArray
+      A.topological( A.root ).toArray,
+      B.topological( B.root ).toArray
     )
   case class Exchange[Label](exchanged: Set[Label] )
   val compared: Map[Symbol, Exchange[Symbol]] =
@@ -221,36 +221,65 @@ object MismatchesTest extends App {
             )
         }
     }
-  pprint.pprintln( left.topological( left.root ) )
-  pprint.pprintln( right.topological( right.root ) )
+
+  lazy val newGraph: GraphVisitation[AdjacentGraph, Symbol, Diff[Symbol]] =
+    alignments.foldLeft( GraphVisitation( AdjacentGraph.single( Diff.same( A.root ) ), Set.empty[Symbol] ) ) {
+      case ( visitation, Alignment( left, right ) ) =>
+        left.zip( right ).foldLeft( visitation ) {
+          case ( GraphVisitation( result, visited ), ( '-, r ) ) =>
+            val parent = B.findParentUnsafe( _ === r )
+            val parentDiff = result.findUnsafe( _.value === parent )
+            GraphVisitation( result.addEdge( parentDiff, Diff.added( r ) ), visited + r )
+          case ( GraphVisitation( result, visited ), ( l, '- ) ) =>
+            val parent = A.findParentUnsafe( _ === l )
+            val parentDiff = result.findUnsafe( _.value === parent )
+            GraphVisitation( result.addEdge( parentDiff, Diff.removed( l ) ), visited + l )
+          case ( GraphVisitation( result, visited ), ( l, r ) ) if l === r =>
+            val parent = A.findParentUnsafe( _ === l )
+            val parentDiff = result.findUnsafe( _.value === parent )
+            GraphVisitation( result.addEdge( parentDiff, Diff.same( l ) ), visited + l )
+
+          case ( GraphVisitation( result, visited ), ( l, r ) ) if l =!= r =>
+            val parentL = A.findParentUnsafe( _ === l )
+            val parentR = B.findParentUnsafe( _ === r )
+            val parentDiffL = result.findUnsafe( _.value === parentL )
+            val parentDiffR = result.findUnsafe( _.value === parentR )
+            GraphVisitation(
+              result.addEdge( parentDiffL, Diff.removed( l ) ).addEdge( parentDiffR, Diff.added( r ) ),
+              visited + l + r
+            )
+        }
+    }
+
+  pprint.pprintln( A.topological( A.root ) )
+  pprint.pprintln( B.topological( B.root ) )
   pprint.pprintln( compared )
   var visited = Set.empty[Symbol]
-  lazy val newGraph: GraphVisitation[AdjacentGraph, Symbol, Diff[Symbol]] =
-    left.dfs( left.root, AdjacentGraph.single( Diff.same( left.root ) ), Set() ) { ( parent, child, newGraph ) =>
-      compared( child ) match {
-        case Exchange( exch ) if exch.contains( child ) =>
-          val parentDiff =
-            newGraph
-              .find( _.value === parent )
-              .result
-              .getOrElse( throw new RuntimeException( s"Parent not found: $parent + $newGraph" ) )
-          newGraph.addEdge( parentDiff, Diff.same( child ) ) //same
-        case Exchange( exch ) if !exch.contains( child ) =>
-          val parentDiff =
-            newGraph
-              .find( _.value === parent )
-              .result
-              .getOrElse( throw new RuntimeException( s"Parent not found: $parent + $newGraph" ) )
-          exch.foldLeft( newGraph.addEdge( parentDiff, Diff.removed( child ) ) ) { //deleted/added
-            case ( g, '- )                         => g
-            case ( g, r ) if visited.contains( r ) => g
-            case ( g, r ) =>
-              visited += r
-              //TODO: filter out the visited from right.subGraph(r)
-              g.addSubGraph( parentDiff, right.subGraph( r ).map( Diff.added( _ ) ) )
-          }
-      }
+  A.dfs( A.root, AdjacentGraph.single( Diff.same( A.root ) ), Set() ) { ( parent, child, newGraph ) =>
+    compared( child ) match {
+      case Exchange( exch ) if exch.contains( child ) =>
+        val parentDiff =
+          newGraph
+            .find( _.value === parent )
+            .result
+            .getOrElse( throw new RuntimeException( s"Parent not found: $parent + $newGraph" ) )
+        newGraph.addEdge( parentDiff, Diff.same( child ) ) //same
+      case Exchange( exch ) if !exch.contains( child ) =>
+        val parentDiff =
+          newGraph
+            .find( _.value === parent )
+            .result
+            .getOrElse( throw new RuntimeException( s"Parent not found: $parent + $newGraph" ) )
+        exch.foldLeft( newGraph.addEdge( parentDiff, Diff.removed( child ) ) ) { //deleted/added
+          case ( g, '- )                         => g
+          case ( g, r ) if visited.contains( r ) => g
+          case ( g, r ) =>
+            visited += r
+            //TODO: filter out the visited from right.subGraph(r)
+            g.addSubGraph( parentDiff, B.subGraph( r ).map( Diff.added( _ ) ) )
+        }
     }
+  }
   //compared( '- ).exchanged.foldLeft( newGraph ) { ( g, r ) =>
   //  right.dfs( right.root, g.result, Set() )(
   //    combine = ( parent, child, visitation ) =>
@@ -262,8 +291,8 @@ object MismatchesTest extends App {
   //  )
   //}
   pprint.pprintln( newGraph )
-  pprint.pprintln( left )
-  pprint.pprintln( right )
+  pprint.pprintln( A )
+  pprint.pprintln( B )
   //alignments
   //  .foreach {
   //    case Alignment( left, right ) =>

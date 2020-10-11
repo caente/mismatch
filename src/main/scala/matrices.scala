@@ -235,6 +235,21 @@ sealed abstract case class AdjacentGraph[Label: Eq](root: Label, val data: Map[L
         stop = (result) => result.isDefined
       )
 
+  def findUnsafe(f: Label => Boolean ): Label =
+    find( f ).result.getOrElse( throw new RuntimeException( "Label not found" ) )
+
+  def findParent(f: Label => Boolean ): GraphVisitation[Option, Label, Label] =
+    if (f( root ))
+      GraphVisitation( Some( root ), Set() )
+    else
+      dfs( root, Option.empty[Label], Set() )(
+        combine = ( parent, node, result ) => result.orElse( Option.when( f( node ) )( parent ) ),
+        stop = (result) => result.isDefined
+      )
+  def findParentUnsafe(f: Label => Boolean ): Label =
+    findParent( f ).result
+      .getOrElse( throw new RuntimeException( "Parent not found" ) )
+
   def addEdge(start: Label, end: Label ): AdjacentGraph[Label] = {
     if (data.keySet.contains( start )) {
       if (start === end) {
