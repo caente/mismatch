@@ -18,11 +18,14 @@ object Diff {
   implicit def eq[A: Eq]: Eq[Diff[A]] = Eq.fromUniversalEquals[Diff[A]]
 }
 object Mismatches {
+  var count = 0
   def compare[Label: Eq: ClassTag](
       A: AdjacentGraph[Label],
       B: AdjacentGraph[Label],
       placeholder: Label
     ): GraphVisitation[AdjacentGraph, Label, Diff[Label]] = {
+    val parentsA = A.parents
+    val parentsB = B.parents
     val alignments =
       NeedlemanWunsch(
         placeholder,
@@ -31,26 +34,36 @@ object Mismatches {
       )
     alignments.foldLeft( GraphVisitation( AdjacentGraph.single( Diff.same( A.root ) ), Set.empty[Label] ) ) {
       case ( visitation, Alignment( left, right ) ) =>
+        count += 1
         left.zip( right ).foldLeft( visitation ) {
           case ( GraphVisitation( result, visited ), ( `placeholder`, r ) ) =>
-            val parent = B.findParentUnsafe( _ === r )
-            val parentDiff = result.findUnsafe( _.value === parent )
-            GraphVisitation( result.addEdge( parentDiff, Diff.added( r ) ), visited + r )
+            val parent = parentsB( r )
+            val parentDiff = result.find( _.value === parent )
+            count += 1 + parentDiff.visited.size
+            GraphVisitation( result.addEdge( parentDiff.result.get, Diff.added( r ) ), visited + r )
           case ( GraphVisitation( result, visited ), ( l, `placeholder` ) ) =>
-            val parent = A.findParentUnsafe( _ === l )
-            val parentDiff = result.findUnsafe( _.value === parent )
-            GraphVisitation( result.addEdge( parentDiff, Diff.removed( l ) ), visited + l )
+            val parent = parentsA( l )
+            val parentDiff = result.find( _.value === parent )
+            count += 1 + parentDiff.visited.size
+            GraphVisitation( result.addEdge( parentDiff.result.get, Diff.removed( l ) ), visited + l )
           case ( GraphVisitation( result, visited ), ( l, r ) ) if l === r =>
-            val parent = A.findParentUnsafe( _ === l )
-            val parentDiff = result.findUnsafe( _.value === parent )
-            GraphVisitation( result.addEdge( parentDiff, Diff.same( l ) ), visited + l )
+            count += 1
+            pprint.pprintln(parentsA)
+            pprint.pprintln(l)
+            val parent = parentsA( l )
+            val parentDiff = result.find( _.value === parent )
+            count += 1 + parentDiff.visited.size
+            GraphVisitation( result.addEdge( parentDiff.result.get, Diff.same( l ) ), visited + l )
           case ( GraphVisitation( result, visited ), ( l, r ) ) if l =!= r =>
-            val parentL = A.findParentUnsafe( _ === l )
-            val parentR = B.findParentUnsafe( _ === r )
-            val parentDiffL = result.findUnsafe( _.value === parentL )
-            val parentDiffR = result.findUnsafe( _.value === parentR )
+            val parentL = parentsA( l )
+            val parentR = parentsB( r )
+            val parentDiffL = result.find( _.value === parentL )
+            val parentDiffR = result.find( _.value === parentR )
+            count += 1 + parentDiffL.visited.size + parentDiffR.visited.size
             GraphVisitation(
-              result.addEdge( parentDiffL, Diff.removed( l ) ).addEdge( parentDiffR, Diff.added( r ) ),
+              result
+                .addEdge( parentDiffL.result.get, Diff.removed( l ) )
+                .addEdge( parentDiffR.result.get, Diff.added( r ) ),
               visited + l + r
             )
         }
@@ -82,11 +95,13 @@ object MismatchesTest extends App {
       .addEdge( 'c, 'j )
       .addEdge( 'x, 'i )
 
+  pprint.pprintln( A.parents( A.root ) )
   pprint.pprintln( A.topological( A.root ) )
   pprint.pprintln( B.topological( B.root ) )
 
   val newGraph = Mismatches.compare( A, B, '- )
   pprint.pprintln( newGraph )
+  pprint.pprintln( Mismatches.count )
   pprint.pprintln( A )
   pprint.pprintln( B )
 }
