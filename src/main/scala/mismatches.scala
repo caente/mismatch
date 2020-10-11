@@ -238,7 +238,6 @@ object MismatchesTest extends App {
             val parent = A.findParentUnsafe( _ === l )
             val parentDiff = result.findUnsafe( _.value === parent )
             GraphVisitation( result.addEdge( parentDiff, Diff.same( l ) ), visited + l )
-
           case ( GraphVisitation( result, visited ), ( l, r ) ) if l =!= r =>
             val parentL = A.findParentUnsafe( _ === l )
             val parentR = B.findParentUnsafe( _ === r )
