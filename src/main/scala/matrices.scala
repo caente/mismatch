@@ -1,10 +1,6 @@
 package matrices
 
-import simulacrum._
-import cats._
-import cats.implicits._
-import higherkindness.droste._
-import higherkindness.droste.data._
+import cats.Eq
 import breeze.linalg.DenseMatrix
 import breeze.linalg.DenseVector
 import scala.reflect.ClassTag
