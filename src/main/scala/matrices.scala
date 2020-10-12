@@ -11,6 +11,7 @@ import scala.reflect.ClassTag
 import breeze.storage.Zero
 import breeze.linalg.CanPadRight
 import breeze.math.Semiring
+import scala.collection.immutable.SortedSet
 
 object utils {
   def prepend[A: ClassTag: Zero](matrix: DenseMatrix[A], extraRows: Int, extraCols: Int ): DenseMatrix[A] = {
@@ -190,23 +191,16 @@ object GraphMatrix {
 }
 
 object AdjacentGraph {
-  def single[Label: Eq](node: Label ): AdjacentGraph[Label] =
-    new AdjacentGraph( node, Map( node -> List.empty[Label] ) ) {}
+  def single[Label: Eq: Ordering](node: Label ): AdjacentGraph[Label] =
+    new AdjacentGraph( node, Map( node -> SortedSet.empty[Label] ) ) {}
 }
 case class GraphVisitation[F[_], Label, B](result: F[B], visited: Set[Label] )
 
-sealed abstract case class AdjacentGraph[Label: Eq](root: Label, val data: Map[Label, List[Label]] ) {
-  def branches(start: Label ): List[List[Label]] = {
-    if (adjacents( start ).isEmpty) List( List( start ) )
-    else {
-      adjacents( start ).flatMap( a => branches( a ).map( start :: _ ) )
-    }
-  }
-
+sealed abstract case class AdjacentGraph[Label: Eq: Ordering](root: Label, val data: Map[Label, SortedSet[Label]] ) {
   def topological(start: Label ): List[Label] =
     dfs( start, List( start ), Set() )( ( _, child, acc ) => child :: acc ).result.reverse
 
-  def adjacents(a: Label ): List[Label] = data.getOrElse( a, List() )
+  def adjacents(a: Label ): SortedSet[Label] = data.getOrElse( a, SortedSet.empty[Label] )
 
   def subGraph(start: Label ): AdjacentGraph[Label] =
     dfs( start, AdjacentGraph.single( start ), Set() ) { ( parent, child, newGraph ) =>
@@ -225,7 +219,7 @@ sealed abstract case class AdjacentGraph[Label: Eq](root: Label, val data: Map[L
       )
       .result
 
-  def map[B: Eq](f: Label => B ): AdjacentGraph[B] =
+  def map[B: Eq: Ordering](f: Label => B ): AdjacentGraph[B] =
     dfs( root, AdjacentGraph.single( f( root ) ), Set() )(
       ( parent, child, graph ) => graph.addEdge( f( parent ), f( child ) )
     ).result
@@ -260,7 +254,7 @@ sealed abstract case class AdjacentGraph[Label: Eq](root: Label, val data: Map[L
       if (start === end) {
         this
       } else {
-        val newData = data.updated( start, (end :: data( start )).distinct ).updated( end, adjacents( end ) )
+        val newData = data.updated( start, data( start ) + end ).updated( end, adjacents( end ) )
         new AdjacentGraph( root, newData ) {}
       }
     } else

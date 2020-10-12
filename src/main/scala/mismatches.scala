@@ -16,10 +16,13 @@ object Diff {
   def added[A](a: A ): Diff[A] = Added( a )
   def removed[A](a: A ): Diff[A] = Removed( a )
   implicit def eq[A: Eq]: Eq[Diff[A]] = Eq.fromUniversalEquals[Diff[A]]
+  implicit def ord[A](implicit A: Ordering[A] ) = new Ordering[Diff[A]] {
+    def compare(x: Diff[A], y: Diff[A] ): Int = A.compare( x.value, y.value )
+  }
 }
 object Mismatches {
   var count = 0
-  def compare[Label: Eq: ClassTag](
+  def compare[Label: Eq: ClassTag: Ordering](
       A: AdjacentGraph[Label],
       B: AdjacentGraph[Label],
       placeholder: Label
@@ -103,11 +106,11 @@ object MismatchesTest extends App {
       .addEdge( 'c, 'j )
       .addEdge( 'x, 'i )
 
- //pprint.pprintln( A.parents( A.root ) )
- //pprint.pprintln( A.topological( A.root ) )
- //pprint.pprintln( B.topological( B.root ) )
+  //pprint.pprintln( A.parents( A.root ) )
+  //pprint.pprintln( A.topological( A.root ) )
+  //pprint.pprintln( B.topological( B.root ) )
 
-  val newGraph = Mismatches.compare( A, Ap, '- )
+  val newGraph = Mismatches.compare( A, B, '- )
   pprint.pprintln( newGraph )
   pprint.pprintln( Mismatches.count )
 }
