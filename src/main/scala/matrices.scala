@@ -207,7 +207,7 @@ sealed abstract case class AdjacentGraph[Label: Eq: Ordering](root: Label, val d
       newGraph.addEdge( parent, child )
     }.result
 
-  def parents: Map[Label, Label] = {
+  val parent: Map[Label, Label] = {
     dfs( root, Map( root -> root ), Set() ) { ( parent, child, ps ) =>
       ps.updated( child, parent )
     }.result

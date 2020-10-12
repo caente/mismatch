@@ -21,14 +21,11 @@ object Diff {
   }
 }
 object Mismatches {
-  var count = 0
   def compare[Label: Eq: ClassTag: Ordering](
       A: AdjacentGraph[Label],
       B: AdjacentGraph[Label],
       placeholder: Label
     ): GraphVisitation[AdjacentGraph, Label, Diff[Label]] = {
-    val parentsA = A.parents
-    val parentsB = B.parents
     val alignments =
       NeedlemanWunsch(
         placeholder,
@@ -37,30 +34,24 @@ object Mismatches {
       )
     alignments.foldLeft( GraphVisitation( AdjacentGraph.single( Diff.same( A.root ) ), Set.empty[Label] ) ) {
       case ( visitation, Alignment( left, right ) ) =>
-        count += 1
         left.zip( right ).foldLeft( visitation ) {
           case ( GraphVisitation( result, visited ), ( `placeholder`, r ) ) =>
-            val parent = parentsB( r )
+            val parent = B.parent( r )
             val parentDiff = result.find( _.value === parent )
-            count += 1 + parentDiff.visited.size
             GraphVisitation( result.addEdge( parentDiff.result.get, Diff.added( r ) ), visited + r )
           case ( GraphVisitation( result, visited ), ( l, `placeholder` ) ) =>
-            val parent = parentsA( l )
+            val parent = A.parent( l )
             val parentDiff = result.find( _.value === parent )
-            count += 1 + parentDiff.visited.size
             GraphVisitation( result.addEdge( parentDiff.result.get, Diff.removed( l ) ), visited + l )
           case ( GraphVisitation( result, visited ), ( l, r ) ) if l === r =>
-            count += 1
-            val parent = parentsA( l )
+            val parent = A.parent( l )
             val parentDiff = result.find( _.value === parent )
-            count += 1 + parentDiff.visited.size
             GraphVisitation( result.addEdge( parentDiff.result.get, Diff.same( l ) ), visited + l )
           case ( GraphVisitation( result, visited ), ( l, r ) ) if l =!= r =>
-            val parentL = parentsA( l )
-            val parentR = parentsB( r )
+            val parentL = A.parent( l )
+            val parentR = B.parent( r )
             val parentDiffL = result.find( _.value === parentL )
             val parentDiffR = result.find( _.value === parentR )
-            count += 1 + parentDiffL.visited.size + parentDiffR.visited.size
             GraphVisitation(
               result
                 .addEdge( parentDiffL.result.get, Diff.removed( l ) )
@@ -112,5 +103,4 @@ object MismatchesTest extends App {
 
   val newGraph = Mismatches.compare( A, B, '- )
   pprint.pprintln( newGraph )
-  pprint.pprintln( Mismatches.count )
 }
