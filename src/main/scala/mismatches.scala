@@ -48,8 +48,6 @@ object Mismatches {
             GraphVisitation( result.addEdge( parentDiff.result.get, Diff.removed( l ) ), visited + l )
           case ( GraphVisitation( result, visited ), ( l, r ) ) if l === r =>
             count += 1
-            pprint.pprintln(parentsA)
-            pprint.pprintln(l)
             val parent = parentsA( l )
             val parentDiff = result.find( _.value === parent )
             count += 1 + parentDiff.visited.size
@@ -83,7 +81,17 @@ object MismatchesTest extends App {
       .addEdge( 'b, 'g )
       .addEdge( 'g, 'k )
       .addEdge( 'c, 'e )
-
+  val Ap =
+    matrices.AdjacentGraph
+      .single( 'Foo )
+      .addEdge( 'Foo, 'a )
+      .addEdge( 'Foo, 'b )
+      .addEdge( 'a, 'c )
+      .addEdge( 'a, 'd )
+      .addEdge( 'b, 'h )
+      .addEdge( 'b, 'g )
+      .addEdge( 'g, 'k )
+      .addEdge( 'c, 'e )
   val B =
     matrices.AdjacentGraph
       .single( 'Foo )
@@ -95,13 +103,11 @@ object MismatchesTest extends App {
       .addEdge( 'c, 'j )
       .addEdge( 'x, 'i )
 
-  pprint.pprintln( A.parents( A.root ) )
-  pprint.pprintln( A.topological( A.root ) )
-  pprint.pprintln( B.topological( B.root ) )
+ //pprint.pprintln( A.parents( A.root ) )
+ //pprint.pprintln( A.topological( A.root ) )
+ //pprint.pprintln( B.topological( B.root ) )
 
-  val newGraph = Mismatches.compare( A, B, '- )
+  val newGraph = Mismatches.compare( A, Ap, '- )
   pprint.pprintln( newGraph )
   pprint.pprintln( Mismatches.count )
-  pprint.pprintln( A )
-  pprint.pprintln( B )
 }
