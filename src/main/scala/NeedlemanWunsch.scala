@@ -136,34 +136,3 @@ object NeedlemanWunsch {
       }
   }
 }
-
-object test extends App {
-  val tree =
-    matrices.GraphMatrix
-      .single( 'Foo )
-     .addEdge( 'Foo, 'a )
-    // .addEdge( 'Foo, 'b )
-    // .addEdge( 'a, 'c )
-    // .addEdge( 'a, 'd )
-    // .addEdge( 'b, 'f )
-    // .addEdge( 'b, 'g )
-    // .addEdge( 'c, 'e )
-  tree.print
-  println( tree.leaves.toList )
-  import NeedlemanWunsch._
- //private val left = Array( 'a, 'b, 'c, 'd )
- //private val right = Array( 'e, 'b, 'f )
-  private val left = Array( 'Foo, 'a, 'c,'e,'d,'b,'h,'k )
-  private val right = Array( 'Foo, 'a, 'c,'j,'d,'b,'h,'i, 'k )
-
-  NeedlemanWunsch( '-, right, left ).foreach {
-    case Alignment( left, right ) =>
-      print(
-        s"""(
-          List(${left.map( _.name ).mkString( "," )}),
-          List(${right.map( _.name ).mkString( "," )})
-      )
-        """
-      )
-  }
-}

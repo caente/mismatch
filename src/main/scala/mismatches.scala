@@ -1,6 +1,7 @@
 package algorithm
 
 import matrices._
+import graph._
 import cats._
 import cats.implicits._
 import scala.reflect.ClassTag
@@ -65,7 +66,7 @@ object Mismatches {
 
 object MismatchesTest extends App {
   val A =
-    matrices.AdjacentGraph
+    AdjacentGraph
       .single( 'Foo )
       .addEdge( 'Foo, 'b )
       .addEdge( 'Foo, 'a )
@@ -76,7 +77,7 @@ object MismatchesTest extends App {
       .addEdge( 'g, 'k )
       .addEdge( 'c, 'e )
   val Ap =
-    matrices.AdjacentGraph
+    AdjacentGraph
       .single( 'Foo )
       .addEdge( 'Foo, 'a )
       .addEdge( 'Foo, 'b )
@@ -87,7 +88,7 @@ object MismatchesTest extends App {
       .addEdge( 'g, 'k )
       .addEdge( 'c, 'e )
   val B =
-    matrices.AdjacentGraph
+    AdjacentGraph
       .single( 'Foo )
       .addEdge( 'Foo, 'l )
       .addEdge( 'Foo, 'a )
