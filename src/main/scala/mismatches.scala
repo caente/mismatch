@@ -38,25 +38,25 @@ object Mismatches {
         left.zip( right ).foldLeft( visitation ) {
           case ( GraphVisitation( result, visited ), ( `placeholder`, r ) ) =>
             val parent = B.parent( r )
-            val parentDiff = result.find( _.value === parent )
-            GraphVisitation( result.addEdge( parentDiff.result.get, Diff.added( r ) ), visited + r )
+            val parentDiff = result.findUnsafe( _.value === parent )
+            GraphVisitation( result.addEdge( parentDiff, Diff.added( r ) ), visited + r )
           case ( GraphVisitation( result, visited ), ( l, `placeholder` ) ) =>
             val parent = A.parent( l )
-            val parentDiff = result.find( _.value === parent )
-            GraphVisitation( result.addEdge( parentDiff.result.get, Diff.removed( l ) ), visited + l )
+            val parentDiff = result.findUnsafe( _.value === parent )
+            GraphVisitation( result.addEdge( parentDiff, Diff.removed( l ) ), visited + l )
           case ( GraphVisitation( result, visited ), ( l, r ) ) if l === r =>
             val parent = A.parent( l )
-            val parentDiff = result.find( _.value === parent )
-            GraphVisitation( result.addEdge( parentDiff.result.get, Diff.same( l ) ), visited + l )
+            val parentDiff = result.findUnsafe( _.value === parent )
+            GraphVisitation( result.addEdge( parentDiff, Diff.same( l ) ), visited + l )
           case ( GraphVisitation( result, visited ), ( l, r ) ) if l =!= r =>
             val parentL = A.parent( l )
             val parentR = B.parent( r )
-            val parentDiffL = result.find( _.value === parentL )
-            val parentDiffR = result.find( _.value === parentR )
+            val parentDiffL = result.findUnsafe( _.value === parentL )
+            val parentDiffR = result.findUnsafe( _.value === parentR )
             GraphVisitation(
               result
-                .addEdge( parentDiffL.result.get, Diff.removed( l ) )
-                .addEdge( parentDiffR.result.get, Diff.added( r ) ),
+                .addEdge( parentDiffL, Diff.removed( l ) )
+                .addEdge( parentDiffR, Diff.added( r ) ),
               visited + l + r
             )
         }
