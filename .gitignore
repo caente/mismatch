@@ -38,4 +38,4 @@ artifactory_credentials
 .bloop/
 .metals/
 project/metals.sbt
-
+.vscode
