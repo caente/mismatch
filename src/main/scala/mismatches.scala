@@ -97,7 +97,9 @@ object MismatchesTest extends App {
       .addEdge( 'l, 'x )
       .addEdge( 'c, 'j )
       .addEdge( 'x, 'i )
-
+  val miniB =
+    AdjacentGraph
+      .single( 'Foo )
   //pprint.pprintln( A.parents( A.root ) )
   //pprint.pprintln( A.topological( A.root ) )
   //pprint.pprintln( B.topological( B.root ) )

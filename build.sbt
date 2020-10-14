@@ -1,6 +1,8 @@
 scalaVersion := "2.13.2"
 
-name := "toMatrix"
+name := "mismatch"
+
+version := "0.1"
 
 libraryDependencies ++= Seq(
   "org.typelevel" %% "simulacrum" % "1.0.0",

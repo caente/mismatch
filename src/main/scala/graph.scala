@@ -42,7 +42,7 @@ sealed abstract case class AdjacentGraph[Label: Eq: Ordering](root: Label, val d
     if (f( root ))
       GraphVisitation( Some( root ), Set() )
     else
-      dfs( root, Option.empty[Label], Set() )(
+      bfs( root, Option.empty[Label], Set() )(
         combine = ( parent, node, result ) =>
           result.orElse( Option.when( f( parent ) )( parent ) ).orElse( Option.when( f( node ) )( node ) ),
         stop = (result) => result.isDefined
@@ -82,11 +82,13 @@ sealed abstract case class AdjacentGraph[Label: Eq: Ordering](root: Label, val d
       start: Label,
       acc: F[B],
       initiallyVisited: Set[Label]
-    )(combine: (Label, Label, F[B] ) => F[B]
+    )(combine: (Label, Label, F[B] ) => F[B],
+      stop: F[B] => Boolean = (_: F[B]) => false
     ): GraphVisitation[F, Label, B] = {
     val visitedAdjacents =
       adjacents( start ).foldLeft( GraphVisitation( acc, initiallyVisited ) ) {
-        case ( GraphVisitation( graph, visited ), adj ) if visited.contains( adj ) => GraphVisitation( graph, visited )
+        case ( GraphVisitation( graph, visited ), adj ) if visited.contains( adj ) || stop( graph ) =>
+          GraphVisitation( graph, visited )
         case ( GraphVisitation( graph, visited ), adj ) =>
           GraphVisitation( combine( start, adj, graph ), visited + adj )
       }

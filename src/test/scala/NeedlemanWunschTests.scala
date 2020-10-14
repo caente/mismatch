@@ -19,4 +19,56 @@ class NeedlemanWunschTests extends AnyFunSuite with TypeCheckedTripleEquals with
       )
     )
   }
+  test( "one vs all different" ) {
+    val left = Array( 'a )
+    val right = Array( 'e, 'b, 'x )
+
+    assert(
+      NeedlemanWunsch( '-, left, right ) === Set(
+        NeedlemanWunsch.Alignment( List( 'a, '-, '- ), List( 'e, 'b, 'x ) ),
+        NeedlemanWunsch.Alignment( List( '-, 'a, '- ), List( 'e, 'b, 'x ) ),
+        NeedlemanWunsch.Alignment( List( '-, '-, 'a ), List( 'e, 'b, 'x ) )
+      )
+    )
+  }
+  test( "one vs many, first equal" ) {
+    val left = Array( 'a )
+    val right = Array( 'a, 'b, 'x )
+
+    assert(
+      NeedlemanWunsch( '-, left, right ) === Set(
+        NeedlemanWunsch.Alignment( List( 'a, '-, '- ), List( 'a, 'b, 'x ) )
+      )
+    )
+  }
+  test( "one vs many, last equal" ) {
+    val left = Array( 'a )
+    val right = Array( 'e, 'b, 'a )
+
+    assert(
+      NeedlemanWunsch( '-, left, right ) === Set(
+        NeedlemanWunsch.Alignment( List( '-, '-, 'a ), List( 'e, 'b, 'a ) )
+      )
+    )
+  }
+  test( "one vs many, middle equal" ) {
+    val left = Array( 'a )
+    val right = Array( 'e, 'a, 'x )
+
+    assert(
+      NeedlemanWunsch( '-, left, right ) === Set(
+        NeedlemanWunsch.Alignment( List( '-, 'a, '- ), List( 'e, 'a, 'x ) )
+      )
+    )
+  }
+  test( "two vs many, extrems equal" ) {
+    val left = Array( 'e, 'x )
+    val right = Array( 'e, 'a, 'x )
+
+    assert(
+      NeedlemanWunsch( '-, left, right ) === Set(
+        NeedlemanWunsch.Alignment( List( 'e, '-, 'x ), List( 'e, 'a, 'x ) )
+      )
+    )
+  }
 }
