@@ -26,41 +26,43 @@ object Mismatches {
       A: AdjacentGraph[Label],
       B: AdjacentGraph[Label],
       placeholder: Label
-    ): GraphVisitation[AdjacentGraph, Label, Diff[Label]] = {
+    ): AdjacentGraph[Diff[Label]] = {
     val alignments =
       NeedlemanWunsch(
         placeholder,
         A.topological( A.root ).toArray,
         B.topological( B.root ).toArray
       )
-    alignments.foldLeft( GraphVisitation( AdjacentGraph.single( Diff.same( A.root ) ), Set.empty[Label] ) ) {
-      case ( visitation, Alignment( left, right ) ) =>
-        left.zip( right ).foldLeft( visitation ) {
-          case ( GraphVisitation( result, visited ), ( `placeholder`, r ) ) =>
-            val parent = B.parent( r )
-            val parentDiff = result.findUnsafe( _.value === parent )
-            GraphVisitation( result.addEdge( parentDiff, Diff.added( r ) ), visited + r )
-          case ( GraphVisitation( result, visited ), ( l, `placeholder` ) ) =>
-            val parent = A.parent( l )
-            val parentDiff = result.findUnsafe( _.value === parent )
-            GraphVisitation( result.addEdge( parentDiff, Diff.removed( l ) ), visited + l )
-          case ( GraphVisitation( result, visited ), ( l, r ) ) if l === r =>
-            val parent = A.parent( l )
-            val parentDiff = result.findUnsafe( _.value === parent )
-            GraphVisitation( result.addEdge( parentDiff, Diff.same( l ) ), visited + l )
-          case ( GraphVisitation( result, visited ), ( l, r ) ) if l =!= r =>
-            val parentL = A.parent( l )
-            val parentR = B.parent( r )
-            val parentDiffL = result.findUnsafe( _.value === parentL )
-            val parentDiffR = result.findUnsafe( _.value === parentR )
-            GraphVisitation(
-              result
-                .addEdge( parentDiffL, Diff.removed( l ) )
-                .addEdge( parentDiffR, Diff.added( r ) ),
-              visited + l + r
-            )
-        }
-    }
+    alignments
+      .foldLeft( GraphVisitation( AdjacentGraph.single( Diff.same( A.root ) ), Set.empty[Label] ) ) {
+        case ( visitation, Alignment( left, right ) ) =>
+          left.zip( right ).foldLeft( visitation ) {
+            case ( GraphVisitation( result, visited ), ( `placeholder`, r ) ) =>
+              val parent = B.parent( r )
+              val parentDiff = result.findUnsafe( _.value === parent )
+              GraphVisitation( result.addEdge( parentDiff, Diff.added( r ) ), visited + r )
+            case ( GraphVisitation( result, visited ), ( l, `placeholder` ) ) =>
+              val parent = A.parent( l )
+              val parentDiff = result.findUnsafe( _.value === parent )
+              GraphVisitation( result.addEdge( parentDiff, Diff.removed( l ) ), visited + l )
+            case ( GraphVisitation( result, visited ), ( l, r ) ) if l === r =>
+              val parent = A.parent( l )
+              val parentDiff = result.findUnsafe( _.value === parent )
+              GraphVisitation( result.addEdge( parentDiff, Diff.same( l ) ), visited + l )
+            case ( GraphVisitation( result, visited ), ( l, r ) ) if l =!= r =>
+              val parentL = A.parent( l )
+              val parentR = B.parent( r )
+              val parentDiffL = result.findUnsafe( _.value === parentL )
+              val parentDiffR = result.findUnsafe( _.value === parentR )
+              GraphVisitation(
+                result
+                  .addEdge( parentDiffL, Diff.removed( l ) )
+                  .addEdge( parentDiffR, Diff.added( r ) ),
+                visited + l + r
+              )
+          }
+      }
+      .result
   }
 }
 
