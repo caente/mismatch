@@ -59,7 +59,6 @@ object Mismatches {
               val parent = parentsA( l )
               val parentDiff = GraphOps.findUnsafe( result )( _.value === parent )
               GraphVisitation( AddDiff.addEdge( result )( parentDiff, Diff.same( l ) ), visited + l )
-
             case ( GraphVisitation( result, visited ), ( l, r ) ) if l =!= r =>
               val parentL = parentsA( l )
               val parentR = parentsB( r )
