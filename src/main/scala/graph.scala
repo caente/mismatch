@@ -14,6 +14,11 @@ sealed abstract case class AdjacentGraph[Label: Eq: Ordering](root: Label, val d
   def topological(start: Label ): List[Label] =
     dfs( start, List( start ), Set() )( ( _, child, acc ) => child :: acc ).result.reverse
 
+  def uniqueNames(start: Label ): Map[Label, List[Label]] =
+    dfs( start, Map( start -> List( start ) ), Set() ) { ( parent, child, acc ) =>
+      acc.updated( child, child :: acc.getOrElse( parent, List( parent ) ) )
+    }.result
+
   def adjacents(a: Label ): SortedSet[Label] = data.getOrElse( a, SortedSet.empty[Label] )
 
   def subGraph(start: Label ): AdjacentGraph[Label] =

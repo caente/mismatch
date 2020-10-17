@@ -107,5 +107,6 @@ object MismatchesTest extends App {
   //pprint.pprintln( B.topological( B.root ) )
 
   val newGraph = Mismatches.compare( A, B, '- )
-  pprint.pprintln( newGraph )
+  val named = A.uniqueNames( 'Foo )
+  pprint.pprintln( A.topological( 'Foo ).map( named ) )
 }
