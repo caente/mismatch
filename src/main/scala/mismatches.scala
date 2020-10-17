@@ -22,42 +22,54 @@ object Diff {
   }
 }
 object Mismatches {
-  def compare[Label: Eq: ClassTag: Ordering](
-      A: AdjacentGraph[Label],
-      B: AdjacentGraph[Label],
+  def compare[Label: Eq: ClassTag: Ordering, G[_]](
+      A: G[Label],
+      B: G[Label],
       placeholder: Label
-    ): AdjacentGraph[Diff[Label]] = {
+    )(implicit Dfs: DFS[G, Label],
+      Bfs: BFS[G, Diff[Label]],
+      C: CreateGraph[G, Diff[Label]],
+      R: Root[G, Label],
+      Rdiff: Root[G, Diff[Label]],
+      AddDiff: AddEdge[G, Diff[Label]]
+    ): G[Diff[Label]] = {
+    val namesA = GraphOps.uniqueNames( A )( R.root( A ) )
+    val namesB = GraphOps.uniqueNames( B )( R.root( B ) )
     val alignments =
       NeedlemanWunsch(
         placeholder,
-        A.topological( A.root ).toArray,
-        B.topological( B.root ).toArray
+        GraphOps.topological( A )( R.root( A ) ).toArray,
+        GraphOps.topological( B )( R.root( B ) ).toArray
       )
+    val parentsA = GraphOps.parents( A )
+    val parentsB = GraphOps.parents( B )
     alignments
-      .foldLeft( GraphVisitation( AdjacentGraph.single( Diff.same( A.root ) ), Set.empty[Label] ) ) {
+      .foldLeft( GraphVisitation( C.create( Diff.same( R.root( A ) ) ), Set.empty[Label] ) ) {
         case ( visitation, Alignment( left, right ) ) =>
           left.zip( right ).foldLeft( visitation ) {
             case ( GraphVisitation( result, visited ), ( `placeholder`, r ) ) =>
-              val parent = B.parent( r )
-              val parentDiff = result.findUnsafe( _.value === parent )
-              GraphVisitation( result.addEdge( parentDiff, Diff.added( r ) ), visited + r )
+              val parent = parentsB( r )
+              val parentDiff = GraphOps.findUnsafe( result )( _.value === parent )
+              GraphVisitation( AddDiff.addEdge( result )( parentDiff, Diff.added( r ) ), visited + r )
             case ( GraphVisitation( result, visited ), ( l, `placeholder` ) ) =>
-              val parent = A.parent( l )
-              val parentDiff = result.findUnsafe( _.value === parent )
-              GraphVisitation( result.addEdge( parentDiff, Diff.removed( l ) ), visited + l )
+              val parent = parentsA( l )
+              val parentDiff = GraphOps.findUnsafe( result )( _.value === parent )
+              GraphVisitation( AddDiff.addEdge( result )( parentDiff, Diff.removed( l ) ), visited + l )
             case ( GraphVisitation( result, visited ), ( l, r ) ) if l === r =>
-              val parent = A.parent( l )
-              val parentDiff = result.findUnsafe( _.value === parent )
-              GraphVisitation( result.addEdge( parentDiff, Diff.same( l ) ), visited + l )
+              val parent = parentsA( l )
+              val parentDiff = GraphOps.findUnsafe( result )( _.value === parent )
+              GraphVisitation( AddDiff.addEdge( result )( parentDiff, Diff.same( l ) ), visited + l )
+
             case ( GraphVisitation( result, visited ), ( l, r ) ) if l =!= r =>
-              val parentL = A.parent( l )
-              val parentR = B.parent( r )
-              val parentDiffL = result.findUnsafe( _.value === parentL )
-              val parentDiffR = result.findUnsafe( _.value === parentR )
+              val parentL = parentsA( l )
+              val parentR = parentsB( r )
+              val parentDiffL = GraphOps.findUnsafe( result )( _.value === parentL )
+              val parentDiffR = GraphOps.findUnsafe( result )( _.value === parentR )
               GraphVisitation(
-                result
-                  .addEdge( parentDiffL, Diff.removed( l ) )
-                  .addEdge( parentDiffR, Diff.added( r ) ),
+                AddDiff.addEdge( AddDiff.addEdge( result )( parentDiffL, Diff.removed( l ) ) )(
+                  parentDiffR,
+                  Diff.added( r )
+                ),
                 visited + l + r
               )
           }
@@ -108,5 +120,5 @@ object MismatchesTest extends App {
 
   val newGraph = Mismatches.compare( A, B, '- )
   val named = A.uniqueNames( 'Foo )
-  pprint.pprintln( A.topological( 'Foo ).map( named ) )
+  pprint.pprintln( newGraph )
 }
