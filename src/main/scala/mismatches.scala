@@ -27,7 +27,7 @@ object Mismatches {
       B: G[Label],
       placeholder: Label
     )(implicit Dfs: DFS[G, Label],
-      Bfs: BFS[G, Diff[Label]],
+      bfs: BFS[G, Diff[Label]],
       C: CreateGraph[G, Diff[Label]],
       R: Root[G, Label],
       Rdiff: Root[G, Diff[Label]],
