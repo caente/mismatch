@@ -94,17 +94,17 @@ object Mismatches {
 }
 
 object MismatchesTest extends App {
-  //val A =
-  //  AdjacentGraph
-  //    .single( 'Foo )
-  //    .addEdge( 'Foo, 'b )
-  //    .addEdge( 'Foo, 'a )
-  //    .addEdge( 'a, 'c )
-  //    .addEdge( 'a, 'd )
-  //    .addEdge( 'b, 'h )
-  //    .addEdge( 'b, 'g )
-  //    .addEdge( 'g, 'k )
-  //    .addEdge( 'c, 'e )
+  val leftManual =
+    AdjacentGraph
+      .single( 'Foo )
+      .addEdge( 'Foo, 'b )
+      .addEdge( 'Foo, 'a )
+      .addEdge( 'a, 'c )
+      .addEdge( 'a, 'd )
+      .addEdge( 'b, 'h )
+      .addEdge( 'b, 'g )
+      .addEdge( 'g, 'k )
+      .addEdge( 'c, 'e )
   //val Ap =
   //  AdjacentGraph
   //    .single( 'Foo )
@@ -138,7 +138,8 @@ object MismatchesTest extends App {
   //pprint.pprintln( newGraph )
   case class C(e: Int )
   case class A(c: C, d: Int )
-  case class B(h: Int, g: Int )
+  case class G(k: Int )
+  case class B(h: Int, g: G )
   case class Foo(a: A, b: B )
   import shapeless._
   val left = Foo(
@@ -150,11 +151,17 @@ object MismatchesTest extends App {
     ),
     B(
       h = 1,
-      g = 1
+      g = G(
+        k = 1
+      )
     )
   )
 
   pprint.pprintln(
     generic.ToGraph[Foo, AdjacentGraph]( 'Foo, left )
   )
+  pprint.pprintln(
+    leftManual
+  )
+  assert( leftManual == generic.ToGraph[Foo, AdjacentGraph]( 'Foo, left ) )
 }
