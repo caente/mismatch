@@ -25,7 +25,8 @@ object Mismatches {
   def compare[Label: Eq: Show, G[_]](
       A: G[Label],
       B: G[Label]
-    )(implicit Dfs: DFS[G, Label],
+    )(implicit
+      dfs: DFS[G, Label],
       bfs: BFS[G, Diff[Label]],
       C: CreateGraph[G, Diff[Label]],
       R: Root[G, Label],
