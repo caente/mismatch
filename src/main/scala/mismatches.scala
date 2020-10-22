@@ -22,10 +22,9 @@ object Diff {
   }
 }
 object Mismatches {
-  def compare[Label: Eq: ClassTag: Ordering, G[_]](
+  def compare[Label: Eq: ClassTag: Ordering: Show, G[_]](
       A: G[Label],
-      B: G[Label],
-      placeholder: Label
+      B: G[Label]
     )(implicit Dfs: DFS[G, Label],
       bfs: BFS[G, Diff[Label]],
       C: CreateGraph[G, Diff[Label]],
@@ -33,13 +32,24 @@ object Mismatches {
       Rdiff: Root[G, Diff[Label]],
       AddDiff: AddEdge[G, Diff[Label]]
     ): G[Diff[Label]] = {
-    val namesA = GraphOps.uniqueNames( A )( R.root( A ) )
-    val namesB = GraphOps.uniqueNames( B )( R.root( B ) )
+    val labelToPathA: Map[Label, String] = GraphOps.uniqueNames( A )( R.root( A ) ).map {
+      case ( label, path ) => label -> path.map( _.show ).reduce( _ + _ )
+    }
+    val pathToLabelA: Map[String, Label] = labelToPathA.map {
+      case ( label, path ) => path -> label
+    }
+    val labelToPathB: Map[Label, String] = GraphOps.uniqueNames( B )( R.root( B ) ).map {
+      case ( label, path ) => label -> path.map( _.show ).reduce( _ + _ )
+    }
+    val pathToLabelB: Map[String, Label] = labelToPathB.map {
+      case ( label, path ) => path -> label
+    }
+    val placeholder = "-"
     val alignments =
       NeedlemanWunsch(
         placeholder,
-        GraphOps.topological( A )( R.root( A ) ).toArray,
-        GraphOps.topological( B )( R.root( B ) ).toArray
+        GraphOps.topological( A )( R.root( A ) ).map( labelToPathA ).toArray,
+        GraphOps.topological( B )( R.root( B ) ).map( labelToPathB ).toArray
       )
     val parentsA = GraphOps.parents( A )
     val parentsB = GraphOps.parents( B )
@@ -48,28 +58,33 @@ object Mismatches {
         case ( visitation, Alignment( left, right ) ) =>
           left.zip( right ).foldLeft( visitation ) {
             case ( GraphVisitation( result, visited ), ( `placeholder`, r ) ) =>
-              val parent = parentsB( r )
+              val b = pathToLabelB( r )
+              val parent = parentsB( b )
               val parentDiff = GraphOps.findUnsafe( result )( _.value === parent )
-              GraphVisitation( AddDiff.addEdge( result )( parentDiff, Diff.added( r ) ), visited + r )
+              GraphVisitation( AddDiff.addEdge( result )( parentDiff, Diff.added( b ) ), visited + b )
             case ( GraphVisitation( result, visited ), ( l, `placeholder` ) ) =>
-              val parent = parentsA( l )
+              val a = pathToLabelA( l )
+              val parent = parentsA( a )
               val parentDiff = GraphOps.findUnsafe( result )( _.value === parent )
-              GraphVisitation( AddDiff.addEdge( result )( parentDiff, Diff.removed( l ) ), visited + l )
+              GraphVisitation( AddDiff.addEdge( result )( parentDiff, Diff.removed( a ) ), visited + a )
             case ( GraphVisitation( result, visited ), ( l, r ) ) if l === r =>
-              val parent = parentsA( l )
+              val a = pathToLabelA( l )
+              val parent = parentsA( a )
               val parentDiff = GraphOps.findUnsafe( result )( _.value === parent )
-              GraphVisitation( AddDiff.addEdge( result )( parentDiff, Diff.same( l ) ), visited + l )
+              GraphVisitation( AddDiff.addEdge( result )( parentDiff, Diff.same( a ) ), visited + a )
             case ( GraphVisitation( result, visited ), ( l, r ) ) if l =!= r =>
-              val parentL = parentsA( l )
-              val parentR = parentsB( r )
+              val a = pathToLabelA( l )
+              val b = pathToLabelB( r )
+              val parentL = parentsA( a )
+              val parentR = parentsB( b )
               val parentDiffL = GraphOps.findUnsafe( result )( _.value === parentL )
               val parentDiffR = GraphOps.findUnsafe( result )( _.value === parentR )
               GraphVisitation(
-                AddDiff.addEdge( AddDiff.addEdge( result )( parentDiffL, Diff.removed( l ) ) )(
+                AddDiff.addEdge( AddDiff.addEdge( result )( parentDiffL, Diff.removed( a ) ) )(
                   parentDiffR,
-                  Diff.added( r )
+                  Diff.added( b )
                 ),
-                visited + l + r
+                visited + a + b
               )
           }
       }
@@ -117,7 +132,7 @@ object MismatchesTest extends App {
   //pprint.pprintln( A.topological( A.root ) )
   //pprint.pprintln( B.topological( B.root ) )
 
-  val newGraph = Mismatches.compare( A, B, '- )
+  val newGraph = Mismatches.compare( A, B )
   val named = A.uniqueNames( 'Foo )
   pprint.pprintln( newGraph )
 }
