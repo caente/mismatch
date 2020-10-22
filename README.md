@@ -1,5 +1,7 @@
 # New diff algorithm for case classes in Scala
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/3837ce06d34542948f1bd2e31ec612dd)](https://app.codacy.com/gh/caente/mismatch?utm_source=github.com&utm_medium=referral&utm_content=caente/mismatch&utm_campaign=Badge_Grade_Settings)
+
 ## Example in Scala
 
 Example, given a case class `Foo` with nested case classes...
