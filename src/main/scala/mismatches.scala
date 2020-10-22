@@ -94,46 +94,67 @@ object Mismatches {
 }
 
 object MismatchesTest extends App {
-  val A =
-    AdjacentGraph
-      .single( 'Foo )
-      .addEdge( 'Foo, 'b )
-      .addEdge( 'Foo, 'a )
-      .addEdge( 'a, 'c )
-      .addEdge( 'a, 'd )
-      .addEdge( 'b, 'h )
-      .addEdge( 'b, 'g )
-      .addEdge( 'g, 'k )
-      .addEdge( 'c, 'e )
-  val Ap =
-    AdjacentGraph
-      .single( 'Foo )
-      .addEdge( 'Foo, 'a )
-      .addEdge( 'Foo, 'b )
-      .addEdge( 'a, 'c )
-      .addEdge( 'a, 'd )
-      .addEdge( 'b, 'h )
-      .addEdge( 'b, 'g )
-      .addEdge( 'g, 'k )
-      .addEdge( 'c, 'e )
-  val B =
-    AdjacentGraph
-      .single( 'Foo )
-      .addEdge( 'Foo, 'l )
-      .addEdge( 'Foo, 'a )
-      .addEdge( 'a, 'c )
-      .addEdge( 'a, 'd )
-      .addEdge( 'l, 'x )
-      .addEdge( 'c, 'j )
-      .addEdge( 'x, 'i )
-  val miniB =
-    AdjacentGraph
-      .single( 'Foo )
-  //pprint.pprintln( A.parents( A.root ) )
-  //pprint.pprintln( A.topological( A.root ) )
-  //pprint.pprintln( B.topological( B.root ) )
+  //val A =
+  //  AdjacentGraph
+  //    .single( 'Foo )
+  //    .addEdge( 'Foo, 'b )
+  //    .addEdge( 'Foo, 'a )
+  //    .addEdge( 'a, 'c )
+  //    .addEdge( 'a, 'd )
+  //    .addEdge( 'b, 'h )
+  //    .addEdge( 'b, 'g )
+  //    .addEdge( 'g, 'k )
+  //    .addEdge( 'c, 'e )
+  //val Ap =
+  //  AdjacentGraph
+  //    .single( 'Foo )
+  //    .addEdge( 'Foo, 'a )
+  //    .addEdge( 'Foo, 'b )
+  //    .addEdge( 'a, 'c )
+  //    .addEdge( 'a, 'd )
+  //    .addEdge( 'b, 'h )
+  //    .addEdge( 'b, 'g )
+  //    .addEdge( 'g, 'k )
+  //    .addEdge( 'c, 'e )
+  //val B =
+  //  AdjacentGraph
+  //    .single( 'Foo )
+  //    .addEdge( 'Foo, 'l )
+  //    .addEdge( 'Foo, 'a )
+  //    .addEdge( 'a, 'c )
+  //    .addEdge( 'a, 'd )
+  //    .addEdge( 'l, 'x )
+  //    .addEdge( 'c, 'j )
+  //    .addEdge( 'x, 'i )
+  //val miniB =
+  //  AdjacentGraph
+  //    .single( 'Foo )
+  ////pprint.pprintln( A.parents( A.root ) )
+  ////pprint.pprintln( A.topological( A.root ) )
+  ////pprint.pprintln( B.topological( B.root ) )
 
-  val newGraph = Mismatches.compare( A, B )
-  val named = A.uniqueNames( 'Foo )
-  pprint.pprintln( newGraph )
+  //val newGraph = Mismatches.compare( A, B )
+  //val named = A.uniqueNames( 'Foo )
+  //pprint.pprintln( newGraph )
+  case class C(e: Int )
+  case class A(c: C, d: Int )
+  case class B(h: Int, g: Int )
+  case class Foo(a: A, b: B )
+  import shapeless._
+  val left = Foo(
+    a = A(
+      c = C(
+        e = 1
+      ),
+      d = 1
+    ),
+    B(
+      h = 1,
+      g = 1
+    )
+  )
+
+  pprint.pprintln(
+    generic.ToGraph[Foo, AdjacentGraph]( 'Foo, left )
+  )
 }
