@@ -22,7 +22,7 @@ object Diff {
   }
 }
 object Mismatches {
-  def compare[Label: Eq: ClassTag: Ordering: Show, G[_]](
+  def compare[Label: Eq: Ordering: Show, G[_]](
       A: G[Label],
       B: G[Label]
     )(implicit Dfs: DFS[G, Label],
