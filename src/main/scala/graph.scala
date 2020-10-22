@@ -7,6 +7,7 @@ import scala.collection.immutable.SortedSet
 object AdjacentGraph {
   def single[Label: Eq: Ordering](node: Label ): AdjacentGraph[Label] =
     new AdjacentGraph( node, Map( node -> SortedSet.empty[Label] ) ) {}
+
   implicit def bfs[Label] = new BFS[AdjacentGraph, Label] {
     def bfs[F[_], B](
         g: AdjacentGraph[Label]

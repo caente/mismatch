@@ -6,6 +6,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalactic.TypeCheckedTripleEquals
 import cats.instances.SymbolInstances
 import graph._
+import cats.implicits._
 
 class MismatchesTests extends AnyFunSuite with TypeCheckedTripleEquals with Matchers with SymbolInstances {
   test( "the first test" ) {
