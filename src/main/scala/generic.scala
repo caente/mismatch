@@ -12,7 +12,7 @@ trait ToGraph[C, G[_], Label] {
 trait Bottom {
   implicit def base[A, G[_]](
       implicit
-      G: AddEdge[G, Symbol]
+      G: NewEdge[G, Symbol]
     ) = new ToGraph[A, G, Symbol] {
     def toGraph(parent: Symbol, c: A ): G[Symbol] => G[Symbol] = identity
   }
@@ -24,13 +24,13 @@ object ToGraph extends Bottom {
   implicit def ccons[H, K <: Symbol, T <: HList, G[_]](
       implicit
       key: Witness.Aux[K],
-      A: AddEdge[G, Symbol],
+      A: NewEdge[G, Symbol],
       C: Lazy[ToGraph[H, G, Symbol]],
       N: Lazy[ToGraph[T, G, Symbol]]
     ) = new ToGraph[FieldType[K, H] :: T, G, Symbol] {
     def toGraph(parent: Symbol, c: labelled.FieldType[K, H] :: T ): G[Symbol] => G[Symbol] = { graph =>
       N.value.toGraph( parent, c.tail )(
-        C.value.toGraph( key.value, c.head )( A.addEdge( graph )( parent, key.value ) )
+        C.value.toGraph( key.value, c.head )( A.newEdge( graph )( parent, key.value ) )
       )
     }
   }

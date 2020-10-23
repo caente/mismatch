@@ -8,8 +8,8 @@ object AdjacentGraph {
   def single[Label: Eq: Ordering](node: Label ): AdjacentGraph[Label] =
     new AdjacentGraph( node, Map( node -> SortedSet.empty[Label] ) ) {}
 
-  implicit def bfs[Label] = new BFS[AdjacentGraph, Label] {
-    def bfs[F[_], B](
+  implicit def bfs[Label] = new BFS[AdjacentGraph] {
+    def bfs[F[_], Label, B](
         g: AdjacentGraph[Label]
       )(start: Label,
         acc: F[B],
@@ -32,8 +32,8 @@ object AdjacentGraph {
         }
     }
   }
-  implicit def dfs[Label] = new DFS[AdjacentGraph, Label] {
-    def dfs[F[_], B](
+  implicit def dfs = new DFS[AdjacentGraph] {
+    def dfs[F[_], Label, B](
         g: AdjacentGraph[Label]
       )(start: Label,
         acc: F[B],
@@ -52,9 +52,9 @@ object AdjacentGraph {
   implicit def createGraph[Label: Eq: Ordering] = new CreateGraph[AdjacentGraph, Label] {
     def create(l: Label ): AdjacentGraph[Label] = AdjacentGraph.single( l )
   }
-  implicit def addEdge[Label: Eq: Ordering](implicit R: Root[AdjacentGraph, Label] ) =
-    new AddEdge[AdjacentGraph, Label] {
-      def addEdge(g: AdjacentGraph[Label] )(start: Label, end: Label ): AdjacentGraph[Label] = {
+  implicit def addEdge[Label: Eq: Ordering](implicit R: Root[AdjacentGraph] ) =
+    new NewEdge[AdjacentGraph, Label] {
+      def newEdge(g: AdjacentGraph[Label] )(start: Label, end: Label ): AdjacentGraph[Label] = {
         val root = R.root( g )
         if (g.data.keySet.contains( start )) {
           if (start === end) {
@@ -67,15 +67,15 @@ object AdjacentGraph {
           throw new IllegalArgumentException( s"At least one node must exist; start:$start end:$end" )
       }
     }
-  implicit def rootAdjacent[Label] = new Root[AdjacentGraph, Label] {
-    def root(g: AdjacentGraph[Label] ): Label = g.root
+  implicit def rootAdjacent = new Root[AdjacentGraph] {
+    def root[Label](g: AdjacentGraph[Label] ): Label = g.root
   }
 }
 
 case class GraphVisitation[F[_], Label, B](result: F[B], visited: Set[Label] )
 
-trait DFS[G[_], Label] {
-  def dfs[F[_], B](
+trait DFS[G[_]] {
+  def dfs[F[_], Label, B](
       g: G[Label]
     )(start: Label,
       acc: F[B],
@@ -85,8 +85,8 @@ trait DFS[G[_], Label] {
     ): GraphVisitation[F, Label, B]
 }
 
-trait BFS[G[_], Label] {
-  def bfs[F[_], B](
+trait BFS[G[_]] {
+  def bfs[F[_], Label, B](
       g: G[Label]
     )(start: Label,
       acc: F[B],
@@ -100,19 +100,19 @@ trait CreateGraph[G[_], Label] {
   def create(l: Label ): G[Label]
 }
 
-trait AddEdge[G[_], Label] {
-  def addEdge(g: G[Label] )(start: Label, end: Label ): G[Label]
+trait NewEdge[G[_], Label] {
+  def newEdge(g: G[Label] )(start: Label, end: Label ): G[Label]
 }
 
-trait Root[G[_], Label] {
-  def root(g: G[Label] ): Label
+trait Root[G[_]] {
+  def root[Label](g: G[Label] ): Label
 }
 
 object GraphOps {
-  def topological[Label, G[_]](g: G[Label] )(start: Label )(implicit G: DFS[G, Label] ): List[Label] =
+  def topological[Label, G[_]](g: G[Label] )(start: Label )(implicit G: DFS[G] ): List[Label] =
     G.dfs( g )( start, List( start ), Set() )( ( _, child, acc ) => child :: acc ).result.reverse
 
-  def uniqueNames[Label, G[_]](g: G[Label] )(start: Label )(implicit G: DFS[G, Label] ): Map[Label, List[Label]] =
+  def uniqueNames[Label, G[_]](g: G[Label] )(start: Label )(implicit G: DFS[G] ): Map[Label, List[Label]] =
     G.dfs( g )( start, Map( start -> List( start ) ), Set() ) { ( parent, child, acc ) =>
         acc.updated( child, child :: acc.getOrElse( parent, List( parent ) ) )
       }
@@ -121,16 +121,16 @@ object GraphOps {
   def subGraph[Label, G[_]](
       g: G[Label]
     )(fromNode: Label
-    )(implicit G: DFS[G, Label],
+    )(implicit G: DFS[G],
       C: CreateGraph[G, Label],
-      Add: AddEdge[G, Label]
+      Add: NewEdge[G, Label]
     ): G[Label] =
     G.dfs( g )( fromNode, C.create( fromNode ), Set() ) { ( parent, child, newGraph ) =>
-        Add.addEdge( newGraph )( parent, child )
+        Add.newEdge( newGraph )( parent, child )
       }
       .result
 
-  def parents[G[_], Label](g: G[Label] )(implicit G: DFS[G, Label], R: Root[G, Label] ): Map[Label, Label] = {
+  def parents[G[_], Label](g: G[Label] )(implicit G: DFS[G], R: Root[G] ): Map[Label, Label] = {
     val root = R.root( g )
     G.dfs( g )( root, Map( root -> root ), Set() ) { ( parent, child, ps ) =>
         ps.updated( child, parent )
@@ -142,13 +142,13 @@ object GraphOps {
       current: G[Label]
     )(node: Label,
       graph: G[Label]
-    )(implicit G: DFS[G, Label],
-      R: Root[G, Label],
-      A: AddEdge[G, Label]
+    )(implicit G: DFS[G],
+      R: Root[G],
+      A: NewEdge[G, Label]
     ): G[Label] = {
     val root = R.root( current )
-    G.dfs( graph )( root, A.addEdge( current )( node, root ), Set() )(
-        ( parent, child, newGraph ) => A.addEdge( newGraph )( parent, child )
+    G.dfs( graph )( root, A.newEdge( current )( node, root ), Set() )(
+        ( parent, child, newGraph ) => A.newEdge( newGraph )( parent, child )
       )
       .result
   }
@@ -156,14 +156,14 @@ object GraphOps {
   def map[G[_], Label, B](
       g: G[Label]
     )(f: Label => B
-    )(implicit G: DFS[G, Label],
-      R: Root[G, Label],
+    )(implicit G: DFS[G],
+      R: Root[G],
       C: CreateGraph[G, B],
-      Add: AddEdge[G, B]
+      Add: NewEdge[G, B]
     ): G[B] = {
     val root = R.root( g )
     G.dfs( g )( root, C.create( f( root ) ), Set() )(
-        ( parent, child, graph ) => Add.addEdge( graph )( f( parent ), f( child ) )
+        ( parent, child, graph ) => Add.newEdge( graph )( f( parent ), f( child ) )
       )
       .result
   }
@@ -171,9 +171,9 @@ object GraphOps {
   def find[G[_], Label](
       g: G[Label]
     )(f: Label => Boolean
-    )(implicit G: BFS[G, Label],
-      R: Root[G, Label],
-      A: AddEdge[G, Label]
+    )(implicit G: BFS[G],
+      R: Root[G],
+      A: NewEdge[G, Label]
     ): GraphVisitation[Option, Label, Label] = {
     val root = R.root( g )
     if (f( root ))
@@ -188,9 +188,9 @@ object GraphOps {
   def findUnsafe[G[_], Label](
       g: G[Label]
     )(f: Label => Boolean
-    )(implicit G: BFS[G, Label],
-      R: Root[G, Label],
-      A: AddEdge[G, Label]
+    )(implicit G: BFS[G],
+      R: Root[G],
+      A: NewEdge[G, Label]
     ): Label =
     find( g )( f ).result.getOrElse( throw new RuntimeException( "Label not found" ) )
 
@@ -198,6 +198,6 @@ object GraphOps {
 
 sealed abstract case class AdjacentGraph[Label: Eq: Ordering](root: Label, val data: Map[Label, SortedSet[Label]] ) {
   def adjacents(a: Label ): SortedSet[Label] = data.getOrElse( a, SortedSet.empty[Label] )
-  def addEdge(start: Label, end: Label ): AdjacentGraph[Label] = AdjacentGraph.addEdge.addEdge( this )( start, end )
+  def addEdge(start: Label, end: Label ): AdjacentGraph[Label] = AdjacentGraph.addEdge.newEdge( this )( start, end )
   def uniqueNames(start: Label ): Map[Label, List[Label]] = GraphOps.uniqueNames( this )( start )
 }

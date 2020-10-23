@@ -41,20 +41,15 @@ object Mismatches {
       A: G[Label],
       B: G[Label]
     )(implicit
-      dfs: DFS[G, Label],
-      bfs: BFS[G, Diff[Label]],
-      dfsString: DFS[G, String],
-      dfsDiff: DFS[G, Diff[String]],
-      bfsString: BFS[G, Diff[String]],
+      dfs: DFS[G],
+      bfs: BFS[G],
       Cs: CreateGraph[G, String],
       C: CreateGraph[G, Diff[String]],
       CLabel: CreateGraph[G, Diff[Label]],
-      R: Root[G, Label],
-      RString: Root[G, String],
-      Rdiff: Root[G, Diff[String]],
-      AddDiff: AddEdge[G, Diff[String]],
-      AddDiffLabel: AddEdge[G, Diff[Label]],
-      AddString: AddEdge[G, String]
+      R: Root[G],
+      AddDiff: NewEdge[G, Diff[String]],
+      AddDiffLabel: NewEdge[G, Diff[Label]],
+      AddString: NewEdge[G, String]
     ): G[Diff[Label]] = {
 
     val labelToPathA: Map[Label, String] = GraphOps.uniqueNames( A )( R.root( A ) ).map {
@@ -90,22 +85,22 @@ object Mismatches {
               case ( GraphVisitation( result, visited ), ( `placeholder`, r ) ) =>
                 val parent = parentsB( r )
                 val parentDiff = GraphOps.findUnsafe( result )( _.value === parent )
-                GraphVisitation( AddDiff.addEdge( result )( parentDiff, Diff.added( r ) ), visited + r )
+                GraphVisitation( AddDiff.newEdge( result )( parentDiff, Diff.added( r ) ), visited + r )
               case ( GraphVisitation( result, visited ), ( l, `placeholder` ) ) =>
                 val parent = parentsA( l )
                 val parentDiff = GraphOps.findUnsafe( result )( _.value === parent )
-                GraphVisitation( AddDiff.addEdge( result )( parentDiff, Diff.removed( l ) ), visited + l )
+                GraphVisitation( AddDiff.newEdge( result )( parentDiff, Diff.removed( l ) ), visited + l )
               case ( GraphVisitation( result, visited ), ( l, r ) ) if l === r =>
                 val parent = parentsA( l )
                 val parentDiff = GraphOps.findUnsafe( result )( _.value === parent )
-                GraphVisitation( AddDiff.addEdge( result )( parentDiff, Diff.same( l ) ), visited + l )
+                GraphVisitation( AddDiff.newEdge( result )( parentDiff, Diff.same( l ) ), visited + l )
               case ( GraphVisitation( result, visited ), ( l, r ) ) if l =!= r =>
                 val parentL = parentsA( l )
                 val parentR = parentsB( r )
                 val parentDiffL = GraphOps.findUnsafe( result )( _.value === parentL )
                 val parentDiffR = GraphOps.findUnsafe( result )( _.value === parentR )
                 GraphVisitation(
-                  AddDiff.addEdge( AddDiff.addEdge( result )( parentDiffL, Diff.removed( l ) ) )(
+                  AddDiff.newEdge( AddDiff.newEdge( result )( parentDiffL, Diff.removed( l ) ) )(
                     parentDiffR,
                     Diff.added( r )
                   ),
