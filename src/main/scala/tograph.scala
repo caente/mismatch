@@ -11,10 +11,7 @@ trait ToGraph[C, G[_], Label] {
 }
 
 trait Bottom {
-  implicit def base[A, G[_]](
-      implicit
-      G: NewEdge[G]
-    ) = new ToGraph[A, G, Symbol] {
+  implicit def base[A, G[_]] = new ToGraph[A, G, Symbol] {
     def toGraph(parent: Symbol, c: A ): G[Symbol] => G[Symbol] = identity
   }
 }
