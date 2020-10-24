@@ -23,12 +23,12 @@ object ToGraph extends Bottom {
       implicit
       key: Witness.Aux[K],
       A: NewEdge[G],
-      C: Lazy[ToGraph[H, G, Symbol]],
-      N: Lazy[ToGraph[T, G, Symbol]]
+      C: ToGraph[H, G, Symbol],
+      N: ToGraph[T, G, Symbol]
     ) = new ToGraph[FieldType[K, H] :: T, G, Symbol] {
     def toGraph(parent: Symbol, c: labelled.FieldType[K, H] :: T ): G[Symbol] => G[Symbol] = { graph =>
-      N.value.toGraph( parent, c.tail )(
-        C.value.toGraph( key.value, c.head )( A.newEdge( graph )( parent, key.value ) )
+      N.toGraph( parent, c.tail )(
+        C.toGraph( key.value, c.head )( A.newEdge( graph )( parent, key.value ) )
       )
     }
   }
