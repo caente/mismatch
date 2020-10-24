@@ -7,6 +7,7 @@ import org.scalactic.TypeCheckedTripleEquals
 import cats.instances.SymbolInstances
 import graph._
 import algorithm._
+import tograph._
 import cats.implicits._
 
 class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with Matchers with SymbolInstances {
@@ -41,7 +42,7 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with Matcher
         )
       )
     )
-    val generated = tograph.ToGraph[Foo, AdjacentGraph]( 'Foo, foo )
+    val generated = ToGraph.create[Foo, AdjacentGraph]( 'Foo, foo )
     assert( generated === manual )
   }
   test( "compare two objects" ) {
@@ -83,8 +84,8 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with Matcher
         )
       )
     )
-    val generated_Left = tograph.ToGraph[Foo_Left, AdjacentGraph]( 'Foo, foo_Left )
-    val generated_Right = tograph.ToGraph[Foo_Right, AdjacentGraph]( 'Foo, foo_Right )
+    val generated_Left = ToGraph.create[Foo_Left, AdjacentGraph]( 'Foo, foo_Left )
+    val generated_Right = ToGraph.create[Foo_Right, AdjacentGraph]( 'Foo, foo_Right )
     val compared = Mismatches.compare( generated_Left, generated_Right )
     val expected = AdjacentGraph
       .single( Diff.same( 'Foo ) )

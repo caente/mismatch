@@ -16,7 +16,7 @@ trait Bottom {
   }
 }
 object ToGraph extends Bottom {
-  def apply[C, G[_]](root: Symbol, c: C )(implicit G: ToGraph[C, G, Symbol], C: CreateGraph[G] ) =
+  def create[C, G[_]](root: Symbol, c: C )(implicit G: ToGraph[C, G, Symbol], C: CreateGraph[G] ) =
     G.toGraph( root, c )( C.create( root ) )
 
   implicit def ccons[H, K <: Symbol, T <: HList, G[_]](
