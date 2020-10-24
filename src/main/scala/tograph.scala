@@ -15,10 +15,8 @@ trait Bottom {
     def toGraph(parent: Symbol, c: A ): G[Symbol] => G[Symbol] = identity
   }
 }
-object ToGraph extends Bottom {
-  def create[C, G[_]](root: Symbol, c: C )(implicit G: ToGraph[C, G, Symbol], C: CreateGraph[G] ) =
-    G.toGraph( root, c )( C.create( root ) )
 
+trait Hlists extends Bottom {
   implicit def ccons[H, K <: Symbol, T <: HList, G[_]](
       implicit
       key: Witness.Aux[K],
@@ -34,6 +32,22 @@ object ToGraph extends Bottom {
   }
   implicit def hnil[G[_]] = new ToGraph[HNil, G, Symbol] {
     def toGraph(parent: Symbol, c: HNil ): G[Symbol] => G[Symbol] = identity
+  }
+}
+object ToGraph extends Hlists {
+  def create[C, G[_]](root: Symbol, c: C )(implicit G: ToGraph[C, G, Symbol], C: CreateGraph[G] ) =
+    G.toGraph( root, c )( C.create( root ) )
+
+  implicit def option[P, G[_]](
+      implicit
+      T: ToGraph[P, G, Symbol]
+    ): ToGraph[Option[P], G, Symbol] = new ToGraph[Option[P], G, Symbol] {
+    def toGraph(parent: Symbol, c: Option[P] ): G[Symbol] => G[Symbol] = { graph =>
+      c match {
+        case Some( p ) => T.toGraph( parent, p )( graph )
+        case None      => graph
+      }
+    }
   }
   implicit def generic[P, C, G[_]](
       implicit

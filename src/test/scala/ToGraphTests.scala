@@ -104,4 +104,50 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with Matcher
       .addEdge( Diff.removed( 'g ), Diff.removed( 'k ) )
     assert( compared.data.toSet == expected.data.toSet )
   }
+  test( "generate option/None" ) {
+    case class A(i: Int )
+    case class B(i: Int )
+    case class Foo(a: Option[A], b: Option[B] )
+    val foo = Foo( Some( A( 1 ) ), None )
+    val generated = ToGraph.create[Foo, AdjacentGraph]( 'Foo, foo )
+    val expected = AdjacentGraph
+      .single( 'Foo )
+      .addEdge( 'Foo, 'a )
+      .addEdge( 'a, 'i )
+      .addEdge( 'Foo, 'b )
+    assert( generated === expected )
+  }
+  test( "generate option/Some" ) {
+    case class A(i: Int )
+    case class B(i: Int )
+    case class Foo(a: Option[A], b: Option[B] )
+    val foo = Foo( Some( A( 1 ) ), Some( B( 1 ) ) )
+    val generated = ToGraph.create[Foo, AdjacentGraph]( 'Foo, foo )
+    val expected = AdjacentGraph
+      .single( 'Foo )
+      .addEdge( 'Foo, 'a )
+      .addEdge( 'a, 'i )
+      .addEdge( 'Foo, 'b )
+      .addEdge( 'b, 'i )
+    assert( generated === expected )
+  }
+  test( "compare options" ) {
+    case class A(i: Int )
+    case class B(i: Int )
+    case class Foo(a: Option[A], b: Option[B] )
+    val left = Foo( Some( A( 1 ) ), None )
+    val right = Foo( Some( A( 1 ) ), Some( B( 1 ) ) )
+    val generatedLeft = ToGraph.create[Foo, AdjacentGraph]( 'Foo, left )
+    val generatedRight = ToGraph.create[Foo, AdjacentGraph]( 'Foo, right )
+    pprint.pprintln( generatedLeft )
+    pprint.pprintln( generatedRight )
+    val expected = AdjacentGraph
+      .single( Diff.same( 'Foo ) )
+      .addEdge( Diff.same( 'Foo ), Diff.same( 'a ) )
+      .addEdge( Diff.same( 'a ), Diff.same( 'i ) )
+      .addEdge( Diff.same( 'Foo ), Diff.same( 'b ) )
+      .addEdge( Diff.same( 'b ), Diff.removed( 'i ) )
+    val compared = Mismatches.compare( generatedLeft, generatedRight )
+    assert( compared.data.toSet == expected.data.toSet )
+  }
 }
