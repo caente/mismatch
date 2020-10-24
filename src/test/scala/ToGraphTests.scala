@@ -9,7 +9,7 @@ import graph._
 import algorithm._
 import cats.implicits._
 
-class GenericTests extends AnyFunSuite with TypeCheckedTripleEquals with Matchers with SymbolInstances {
+class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with Matchers with SymbolInstances {
   test( "manual vs generic" ) {
     val manual =
       AdjacentGraph
@@ -41,7 +41,7 @@ class GenericTests extends AnyFunSuite with TypeCheckedTripleEquals with Matcher
         )
       )
     )
-    val generated = generic.ToGraph[Foo, AdjacentGraph]( 'Foo, foo )
+    val generated = tograph.ToGraph[Foo, AdjacentGraph]( 'Foo, foo )
     assert( generated === manual )
   }
   test( "compare two objects" ) {
@@ -83,8 +83,8 @@ class GenericTests extends AnyFunSuite with TypeCheckedTripleEquals with Matcher
         )
       )
     )
-    val generated_Left = generic.ToGraph[Foo_Left, AdjacentGraph]( 'Foo, foo_Left )
-    val generated_Right = generic.ToGraph[Foo_Right, AdjacentGraph]( 'Foo, foo_Right )
+    val generated_Left = tograph.ToGraph[Foo_Left, AdjacentGraph]( 'Foo, foo_Left )
+    val generated_Right = tograph.ToGraph[Foo_Right, AdjacentGraph]( 'Foo, foo_Right )
     val compared = Mismatches.compare( generated_Left, generated_Right )
     val expected = AdjacentGraph
       .single( Diff.same( 'Foo ) )

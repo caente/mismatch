@@ -1,4 +1,4 @@
-package generic
+package tograph
 
 import graph._
 import shapeless._
