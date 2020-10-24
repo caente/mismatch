@@ -4,6 +4,7 @@ import graph._
 import shapeless._
 import labelled._
 import ops.record._
+import cats.implicits._
 
 trait ToGraph[C, G[_], Label] {
   def toGraph(parent: Label, c: C ): G[Label] => G[Label]
@@ -12,19 +13,19 @@ trait ToGraph[C, G[_], Label] {
 trait Bottom {
   implicit def base[A, G[_]](
       implicit
-      G: NewEdge[G, Symbol]
+      G: NewEdge[G]
     ) = new ToGraph[A, G, Symbol] {
     def toGraph(parent: Symbol, c: A ): G[Symbol] => G[Symbol] = identity
   }
 }
 object ToGraph extends Bottom {
-  def apply[C, G[_]](root: Symbol, c: C )(implicit G: ToGraph[C, G, Symbol], C: CreateGraph[G, Symbol] ) =
+  def apply[C, G[_]](root: Symbol, c: C )(implicit G: ToGraph[C, G, Symbol], C: CreateGraph[G] ) =
     G.toGraph( root, c )( C.create( root ) )
 
   implicit def ccons[H, K <: Symbol, T <: HList, G[_]](
       implicit
       key: Witness.Aux[K],
-      A: NewEdge[G, Symbol],
+      A: NewEdge[G],
       C: Lazy[ToGraph[H, G, Symbol]],
       N: Lazy[ToGraph[T, G, Symbol]]
     ) = new ToGraph[FieldType[K, H] :: T, G, Symbol] {

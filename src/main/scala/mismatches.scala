@@ -41,15 +41,12 @@ object Mismatches {
       A: G[Label],
       B: G[Label]
     )(implicit
-      dfs: DFS[G],
-      bfs: BFS[G],
-      Cs: CreateGraph[G, String],
-      C: CreateGraph[G, Diff[String]],
-      CLabel: CreateGraph[G, Diff[Label]],
+      DFS: DFS[G],
+      BFS: BFS[G],
       R: Root[G],
-      AddDiff: NewEdge[G, Diff[String]],
-      AddDiffLabel: NewEdge[G, Diff[Label]],
-      AddString: NewEdge[G, String]
+      C: CreateGraph[G],
+      E: NewEdge[G],
+      O: Ordering[Label]
     ): G[Diff[Label]] = {
 
     val labelToPathA: Map[Label, String] = GraphOps.uniqueNames( A )( R.root( A ) ).map {
@@ -85,22 +82,22 @@ object Mismatches {
               case ( GraphVisitation( result, visited ), ( `placeholder`, r ) ) =>
                 val parent = parentsB( r )
                 val parentDiff = GraphOps.findUnsafe( result )( _.value === parent )
-                GraphVisitation( AddDiff.newEdge( result )( parentDiff, Diff.added( r ) ), visited + r )
+                GraphVisitation( E.newEdge( result )( parentDiff, Diff.added( r ) ), visited + r )
               case ( GraphVisitation( result, visited ), ( l, `placeholder` ) ) =>
                 val parent = parentsA( l )
                 val parentDiff = GraphOps.findUnsafe( result )( _.value === parent )
-                GraphVisitation( AddDiff.newEdge( result )( parentDiff, Diff.removed( l ) ), visited + l )
+                GraphVisitation( E.newEdge( result )( parentDiff, Diff.removed( l ) ), visited + l )
               case ( GraphVisitation( result, visited ), ( l, r ) ) if l === r =>
                 val parent = parentsA( l )
                 val parentDiff = GraphOps.findUnsafe( result )( _.value === parent )
-                GraphVisitation( AddDiff.newEdge( result )( parentDiff, Diff.same( l ) ), visited + l )
+                GraphVisitation( E.newEdge( result )( parentDiff, Diff.same( l ) ), visited + l )
               case ( GraphVisitation( result, visited ), ( l, r ) ) if l =!= r =>
                 val parentL = parentsA( l )
                 val parentR = parentsB( r )
                 val parentDiffL = GraphOps.findUnsafe( result )( _.value === parentL )
                 val parentDiffR = GraphOps.findUnsafe( result )( _.value === parentR )
                 GraphVisitation(
-                  AddDiff.newEdge( AddDiff.newEdge( result )( parentDiffL, Diff.removed( l ) ) )(
+                  E.newEdge( E.newEdge( result )( parentDiffL, Diff.removed( l ) ) )(
                     parentDiffR,
                     Diff.added( r )
                   ),
@@ -111,77 +108,4 @@ object Mismatches {
         .result
     GraphOps.map( comparedGraphs )( _.map( n => pathToLabelA.get( n ).getOrElse( pathToLabelB( n ) ) ) )
   }
-}
-
-object MismatchesTest extends App {
-  val leftManual =
-    AdjacentGraph
-      .single( 'Foo )
-      .addEdge( 'Foo, 'b )
-      .addEdge( 'Foo, 'a )
-      .addEdge( 'a, 'c )
-      .addEdge( 'a, 'd )
-      .addEdge( 'b, 'h )
-      .addEdge( 'b, 'g )
-      .addEdge( 'g, 'k )
-      .addEdge( 'c, 'e )
-  //val Ap =
-  //  AdjacentGraph
-  //    .single( 'Foo )
-  //    .addEdge( 'Foo, 'a )
-  //    .addEdge( 'Foo, 'b )
-  //    .addEdge( 'a, 'c )
-  //    .addEdge( 'a, 'd )
-  //    .addEdge( 'b, 'h )
-  //    .addEdge( 'b, 'g )
-  //    .addEdge( 'g, 'k )
-  //    .addEdge( 'c, 'e )
-  //val B =
-  //  AdjacentGraph
-  //    .single( 'Foo )
-  //    .addEdge( 'Foo, 'l )
-  //    .addEdge( 'Foo, 'a )
-  //    .addEdge( 'a, 'c )
-  //    .addEdge( 'a, 'd )
-  //    .addEdge( 'l, 'x )
-  //    .addEdge( 'c, 'j )
-  //    .addEdge( 'x, 'i )
-  //val miniB =
-  //  AdjacentGraph
-  //    .single( 'Foo )
-  ////pprint.pprintln( A.parents( A.root ) )
-  ////pprint.pprintln( A.topological( A.root ) )
-  ////pprint.pprintln( B.topological( B.root ) )
-
-  //val newGraph = Mismatches.compare( A, B )
-  //val named = A.uniqueNames( 'Foo )
-  //pprint.pprintln( newGraph )
-  case class C(e: Int )
-  case class A(c: C, d: Int )
-  case class G(k: Int )
-  case class B(h: Int, g: G )
-  case class Foo(a: A, b: B )
-  import shapeless._
-  val left = Foo(
-    a = A(
-      c = C(
-        e = 1
-      ),
-      d = 1
-    ),
-    B(
-      h = 1,
-      g = G(
-        k = 1
-      )
-    )
-  )
-
-  pprint.pprintln(
-    generic.ToGraph[Foo, AdjacentGraph]( 'Foo, left )
-  )
-  pprint.pprintln(
-    leftManual
-  )
-  assert( leftManual == generic.ToGraph[Foo, AdjacentGraph]( 'Foo, left ) )
 }
