@@ -48,4 +48,16 @@ class MismatchesTests extends AnyFunSuite with TypeCheckedTripleEquals with Matc
         .addEdge( Diff.same( 'b ), Diff.added( 'c ) )
     )
   }
+  test( "missing path" ) {
+    val A = AdjacentGraph.single( 'Foo ).addEdge( 'Foo, 'a ).addEdge( 'a, 'i ).addEdge( 'Foo, 'b )
+    val B = AdjacentGraph.single( 'Foo ).addEdge( 'Foo, 'a ).addEdge( 'a, 'i ).addEdge( 'Foo, 'b ).addEdge( 'b, 'i )
+    val result = Mismatches.compare( A, B )
+    val expected = AdjacentGraph
+      .single( Diff.same( 'Foo ) )
+      .addEdge( Diff.same( 'Foo ), Diff.same( 'a ) )
+      .addEdge( Diff.same( 'Foo ), Diff.same( 'b ) )
+      .addEdge( Diff.same( 'a ), Diff.removed( 'i ) )
+      .addEdge( Diff.same( 'b ), Diff.added( 'i ) )
+    assert( result === expected )
+  }
 }

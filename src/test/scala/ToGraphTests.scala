@@ -139,14 +139,12 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with Matcher
     val right = Foo( Some( A( 1 ) ), Some( B( 1 ) ) )
     val generatedLeft = ToGraph.create[Foo, AdjacentGraph]( 'Foo, left )
     val generatedRight = ToGraph.create[Foo, AdjacentGraph]( 'Foo, right )
-    pprint.pprintln( generatedLeft )
-    pprint.pprintln( generatedRight )
     val expected = AdjacentGraph
       .single( Diff.same( 'Foo ) )
       .addEdge( Diff.same( 'Foo ), Diff.same( 'a ) )
-      .addEdge( Diff.same( 'a ), Diff.same( 'i ) )
       .addEdge( Diff.same( 'Foo ), Diff.same( 'b ) )
-      .addEdge( Diff.same( 'b ), Diff.removed( 'i ) )
+      .addEdge( Diff.same( 'a ), Diff.removed( 'i ) )
+      .addEdge( Diff.same( 'b ), Diff.added( 'i ) )
     val compared = Mismatches.compare( generatedLeft, generatedRight )
     assert( compared.data.toSet == expected.data.toSet )
   }

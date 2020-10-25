@@ -112,6 +112,9 @@ object GraphOps {
   def topological[Label, G[_]](g: G[Label] )(start: Label )(implicit G: DFS[G] ): List[Label] =
     G.dfs( g )( start, List( start ), Set() )( ( _, child, acc ) => child :: acc ).result.reverse
 
+  def allNodes[Label, G[_]](g: G[Label] )(start: Label )(implicit G: BFS[G] ): List[Label] =
+    G.bfs( g )( start, List( start ), Set() )( ( _, child, acc ) => child :: acc ).result.reverse
+
   def uniqueNames[Label, G[_]](g: G[Label] )(start: Label )(implicit G: DFS[G] ): Map[Label, List[Label]] =
     G.dfs( g )( start, Map( start -> List( start ) ), Set() ) { ( parent, child, acc ) =>
         acc.updated( child, child :: acc.getOrElse( parent, List( parent ) ) )
