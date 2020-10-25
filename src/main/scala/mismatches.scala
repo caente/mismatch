@@ -68,8 +68,8 @@ object Mismatches {
     val alignments =
       NeedlemanWunsch(
         placeholder,
-        GraphOps.allNodes( ANamed )( labelToPathA( R.root( A ) ) ).toArray,
-        GraphOps.allNodes( BNamed )( labelToPathB( R.root( B ) ) ).toArray
+        GraphOps.allNodes( ANamed ).toArray,
+        GraphOps.allNodes( BNamed ).toArray
       )
 
     val parentsA = GraphOps.parents( ANamed )

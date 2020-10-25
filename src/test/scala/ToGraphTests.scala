@@ -45,7 +45,7 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with Matcher
     val generated = ToGraph.create[Foo, AdjacentGraph]( 'Foo, foo )
     assert( generated === manual )
   }
-  test( "compare two objects" ) {
+  test( "compare two different classes" ) {
     case class C_Left(e: Int )
     case class A_Left(c: C_Left, d: Int )
     case class G_Left(k: Int )
@@ -130,22 +130,5 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with Matcher
       .addEdge( 'Foo, 'b )
       .addEdge( 'b, 'i )
     assert( generated === expected )
-  }
-  test( "compare options with None and Some" ) {
-    case class A(i: Int )
-    case class B(i: Int )
-    case class Foo(a: Option[A], b: Option[B] )
-    val left = Foo( Some( A( 1 ) ), None )
-    val right = Foo( Some( A( 1 ) ), Some( B( 1 ) ) )
-    val generatedLeft = ToGraph.create[Foo, AdjacentGraph]( 'Foo, left )
-    val generatedRight = ToGraph.create[Foo, AdjacentGraph]( 'Foo, right )
-    val expected = AdjacentGraph
-      .single( Diff.same( 'Foo ) )
-      .addEdge( Diff.same( 'Foo ), Diff.same( 'a ) )
-      .addEdge( Diff.same( 'Foo ), Diff.same( 'b ) )
-      .addEdge( Diff.same( 'a ), Diff.removed( 'i ) )
-      .addEdge( Diff.same( 'b ), Diff.added( 'i ) )
-    val compared = Mismatches.compare( generatedLeft, generatedRight )
-    assert( compared.data.toSet == expected.data.toSet )
   }
 }
