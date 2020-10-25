@@ -131,7 +131,7 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with Matcher
       .addEdge( 'b, 'i )
     assert( generated === expected )
   }
-  test( "compare options" ) {
+  test( "compare options with None and Some" ) {
     case class A(i: Int )
     case class B(i: Int )
     case class Foo(a: Option[A], b: Option[B] )
