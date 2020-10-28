@@ -9,7 +9,7 @@ object AdjacentGraph {
   def single[Label: Eq: Ordering](node: Label ): AdjacentGraph[Label] =
     new AdjacentGraph( node, Map( NonEmptyList.one( node ) -> SortedSet.empty[Label] ) ) {}
 
-  implicit def bfsConnect[Label] = new BFS[AdjacentGraph] {
+  implicit def bfs[Label] = new BFS[AdjacentGraph] {
     def bfs[F[_], Label, B](
         g: AdjacentGraph[Label]
       )(start: NonEmptyList[Label],
@@ -34,7 +34,7 @@ object AdjacentGraph {
     }
   }
 
-  implicit def dfsConnect = new DFS[AdjacentGraph] {
+  implicit def dfs = new DFS[AdjacentGraph] {
     def dfs[F[_], Label, B](
         g: AdjacentGraph[Label]
       )(start: NonEmptyList[Label],

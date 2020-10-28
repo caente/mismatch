@@ -60,14 +60,6 @@ object Mismatches {
       .foldLeft( GraphVisitation( C.create( Diff.same( R.root( A ) ) ), Set.empty[NonEmptyList[Label]] ) ) {
         case ( visitation, Alignment( left, right ) ) =>
           left.zip( right ).foldLeft( visitation ) {
-            case ( GraphVisitation( result, visited ), ( NonEmptyList( `placeholder`, Nil ), r ) ) =>
-              val parent = r.tail.toNel
-              val parentDiff = GraphOps.findPathUnsafe( result )( n => parent.exists( _ === n.map( _.value ) ) )
-              GraphVisitation( E.connect( result )( parentDiff, Diff.added( r.head ) ), visited + r )
-            case ( GraphVisitation( result, visited ), ( l, NonEmptyList( `placeholder`, Nil ) ) ) =>
-              val parent = l.tail.toNel
-              val parentDiff = GraphOps.findPathUnsafe( result )( n => parent.exists( _ === n.map( _.value ) ) )
-              GraphVisitation( E.connect( result )( parentDiff, Diff.removed( l.head ) ), visited + l )
             case ( GraphVisitation( result, visited ), ( l, r ) ) if l === r =>
               // the only case when lLabel.tail.toNel can be empty, is when both l and r are the root
               l.tail.toNel match {
@@ -76,6 +68,14 @@ object Mismatches {
                   GraphVisitation( E.connect( result )( parentDiff, Diff.same( l.head ) ), visited + l )
                 case None => visitation
               }
+            case ( GraphVisitation( result, visited ), ( NonEmptyList( `placeholder`, Nil ), r ) ) =>
+              val parent = r.tail.toNel
+              val parentDiff = GraphOps.findPathUnsafe( result )( n => parent.exists( _ === n.map( _.value ) ) )
+              GraphVisitation( E.connect( result )( parentDiff, Diff.added( r.head ) ), visited + r )
+            case ( GraphVisitation( result, visited ), ( l, NonEmptyList( `placeholder`, Nil ) ) ) =>
+              val parent = l.tail.toNel
+              val parentDiff = GraphOps.findPathUnsafe( result )( n => parent.exists( _ === n.map( _.value ) ) )
+              GraphVisitation( E.connect( result )( parentDiff, Diff.removed( l.head ) ), visited + l )
             case ( GraphVisitation( result, visited ), ( l, r ) ) if l =!= r =>
               val parentL = l.tail.toNel
               val parentR = r.tail.toNel
