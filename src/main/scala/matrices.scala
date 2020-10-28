@@ -1,8 +1,7 @@
 package matrices
 
 import cats.Eq
-import breeze.linalg.DenseMatrix
-import breeze.linalg.DenseVector
+import breeze.linalg.{ DenseMatrix, DenseVector }
 import scala.reflect.ClassTag
 import breeze.storage.Zero
 import breeze.math.Semiring
@@ -83,4 +82,3 @@ object NeedlemanWunschMatrix {
     ): NeedlemanWunschMatrix[Label] =
     new NeedlemanWunschMatrix( matrices.LabelledMatrix.zeros( left, right ), placeholder ) {}
 }
-

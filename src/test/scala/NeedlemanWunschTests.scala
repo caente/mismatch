@@ -5,9 +5,9 @@ import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 import org.scalactic.TypeCheckedTripleEquals
 import cats.instances.SymbolInstances
+import NeedlemanWunsch._
 
 class NeedlemanWunschTests extends AnyFunSuite with TypeCheckedTripleEquals with Matchers with SymbolInstances {
-  import NeedlemanWunsch._
   test( "first case ever" ) {
     val left = Array( 'a, 'b, 'c, 'd )
     val right = Array( 'e, 'b, 'f )

@@ -1,13 +1,12 @@
 package algorithm
 
-import shapeless.Nat
 import shapeless.nat._
 import shapeless.ops.nat.Sum
 import shapeless.syntax.typeable
 import shapeless.Witness
 import simulacrum._
 import cats._
-import shapeless.Succ
+import shapeless.{ Nat, Succ }
 import cats.implicits._
 import higherkindness.droste._
 import higherkindness.droste.data._
@@ -18,7 +17,11 @@ import matrices._
 
 object NeedlemanWunsch {
   case class Alignment[A](left: List[A], right: List[A] )
-  def apply[Label: ClassTag: Eq](placeholder: Label, left: Array[Label], right: Array[Label] ): Set[Alignment[Label]] = {
+  def apply[Label: ClassTag: Eq](
+      placeholder: Label,
+      left: Array[Label],
+      right: Array[Label]
+    ): Set[Alignment[Label]] = {
     val m = NeedlemanWunschMatrix( placeholder, left, right )
     val matrix = scoredMatrix( m )
     alignments(
@@ -30,7 +33,13 @@ object NeedlemanWunsch {
     )
   }
 
-  private def alignments[A: ClassTag](placeholder: A, row: Int, col: Int, matrix: DenseMatrix[Scores[A]], acc: Set[Alignment[A]] ): Set[Alignment[A]] = {
+  private def alignments[A: ClassTag](
+      placeholder: A,
+      row: Int,
+      col: Int,
+      matrix: DenseMatrix[Scores[A]],
+      acc: Set[Alignment[A]]
+    ): Set[Alignment[A]] = {
     matrix( row, col ) match {
       case Corner( _ ) => acc
       case LeftBorder( item, score ) =>
@@ -50,7 +59,8 @@ object NeedlemanWunsch {
           acc = updateAccumulator( placeholder, item, acc )
         )
       case InnerNode( rowHeader, colHeader, _, Neighbors( left, diag, top ) ) =>
-        val directions: Set[Score] = List( left, diag, top ).groupBy( _.score ).maxBy( _._1 )._2.toSet
+        val scores = List( left, diag, top ).groupBy( _.score )
+        val directions: Set[Score] = scores.maxBy( _._1 )._2.toSet
         directions.flatMap {
           case Diag( _ ) =>
             alignments(
@@ -104,7 +114,12 @@ object NeedlemanWunsch {
     val diag = m.matrix( row - 1, col - 1 ) + diff
     val score = List( left, top, diag ).max
     m.matrix.update( row, col, score )
-    InnerNode( rowHeader = rowHeader, colHeader = colHeader, score = score, neighbors = Neighbors( Left( left ), Diag( diag ), Top( top ) ) )
+    InnerNode(
+      rowHeader = rowHeader,
+      colHeader = colHeader,
+      score = score,
+      neighbors = Neighbors( Left( left ), Diag( diag ), Top( top ) )
+    )
   }
 
   private def scoredMatrix[A: Eq](m: NeedlemanWunschMatrix[A] ): DenseMatrix[Scores[A]] = {
