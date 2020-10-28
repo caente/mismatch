@@ -131,4 +131,50 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with Matcher
       .addEdge( 'b, 'i )
     assert( generated === expected )
   }
+  test( "generate sealed trait" ) {
+    sealed trait A
+    case class A1(i: Int ) extends A
+    case class A2(i: Int ) extends A
+    case class Foo(a: A, b: A )
+    val foo = Foo( a = A2( 1 ), b = A1( 1 ) )
+    val generated = ToGraph.create[Foo, AdjacentGraph]( 'Foo, foo )
+    val expected = AdjacentGraph
+      .single( 'Foo )
+      .addEdge( 'Foo, 'a )
+      .addEdge( 'Foo, 'b )
+      .addEdge( 'a, 'i )
+      .addEdge( 'b, 'i )
+    assert( generated === expected )
+  }
+  test( "same name in two branches" ) {
+    case class A(b: B )
+    case class B(i: Int )
+    case class Foo(a: A, b: A )
+    val foo = Foo(
+      a = A(
+        b = B( i = 1 )
+      ),
+      b = A(
+        b = B( i = 1 )
+      )
+    )
+    val generated = ToGraph.create[Foo, AdjacentGraph]( 'Foo, foo )
+    val expected = AdjacentGraph
+      .single( 'Foo )
+      .addEdge( 'Foo, 'a )
+      .addEdge( 'Foo, 'b )
+      .addEdge( 'a, 'b )
+      .addEdge( 'b, 'i )
+    assert(
+      generated === expected,
+      s"""
+      result: ${generated.data.map {
+        case ( path, adjs ) => path.head -> adjs
+      }}
+      expected: ${expected.data.map {
+        case ( path, adjs ) => path.head -> adjs
+      }}
+    """
+    )
+  }
 }

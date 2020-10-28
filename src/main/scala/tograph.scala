@@ -33,6 +33,27 @@ trait Hlists extends Bottom {
   implicit def hnil[G[_]] = new ToGraph[HNil, G, Symbol] {
     def toGraph(parent: Symbol, c: HNil ): G[Symbol] => G[Symbol] = identity
   }
+  implicit def cnil[G[_]]: ToGraph[CNil, G, Symbol] = new ToGraph[CNil, G, Symbol] {
+    def toGraph(parent: Symbol, c: CNil ): G[Symbol] => G[Symbol] = identity
+  }
+
+  implicit def coproduct[G[_], H, T <: Coproduct, K <: Symbol](
+      implicit
+      key: Witness.Aux[K],
+      A: NewEdge[G],
+      C: ToGraph[H, G, Symbol],
+      N: ToGraph[T, G, Symbol]
+    ): ToGraph[FieldType[K, H] :+: T, G, Symbol] =
+    new ToGraph[FieldType[K, H] :+: T, G, Symbol] {
+      def toGraph(parent: Symbol, c: FieldType[K, H] :+: T ): G[Symbol] => G[Symbol] = { graph =>
+        c match {
+          case Inl( h ) =>
+            C.toGraph( parent, h )( graph )
+          case Inr( tail ) =>
+            N.toGraph( parent, tail )( graph )
+        }
+      }
+    }
 }
 object ToGraph extends Hlists {
   def create[C, G[_]](root: Symbol, c: C )(implicit G: ToGraph[C, G, Symbol], C: CreateGraph[G] ) =
@@ -49,6 +70,7 @@ object ToGraph extends Hlists {
       }
     }
   }
+
   implicit def generic[P, C, G[_]](
       implicit
       gen: LabelledGeneric.Aux[P, C],

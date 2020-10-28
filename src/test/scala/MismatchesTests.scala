@@ -56,8 +56,18 @@ class MismatchesTests extends AnyFunSuite with TypeCheckedTripleEquals with Matc
       .single( Diff.same( 'Foo ) )
       .addEdge( Diff.same( 'Foo ), Diff.same( 'a ) )
       .addEdge( Diff.same( 'Foo ), Diff.same( 'b ) )
-      .addEdge( Diff.same( 'a ), Diff.removed( 'i ) )
+      .addEdge( Diff.same( 'a ), Diff.same( 'i ) )
       .addEdge( Diff.same( 'b ), Diff.added( 'i ) )
-    assert( result === expected )
+    assert(
+      result === expected,
+      s"""
+      result: ${result.data.map {
+        case ( path, adjs ) => path.head -> adjs
+      }}
+      expected: ${expected.data.map {
+        case ( path, adjs ) => path.head -> adjs
+      }}
+    """
+    )
   }
 }

@@ -6,6 +6,7 @@ import cats._
 import cats.implicits._
 import scala.reflect.ClassTag
 import algorithm.NeedlemanWunsch.Alignment
+import cats.data.NonEmptyList
 
 sealed trait Diff[A] {
   def value: A
@@ -41,71 +42,71 @@ object Mismatches {
       A: G[Label],
       B: G[Label]
     )(implicit
-      DFS: DFS[G],
-      BFS: BFS[G],
+      //  DFS: DFS[G],
+      //  BFS: BFS[G],
+      DFSC: DFSConnect[G],
+      BFSC: BFSConnect[G],
       R: Root[G],
       C: CreateGraph[G],
-      E: NewEdge[G],
+      //E: NewEdge[G],
+      EC: Connect[G],
       O: Ordering[Label]
     ): G[Diff[Label]] = {
 
-    val labelToPathA: Map[Label, String] = GraphOps.uniqueNames( A )( R.root( A ) ).map {
-      case ( label, path ) => label -> path.map( _.show ).reduce( _ + _ )
-    }
-    val pathToLabelA: Map[String, Label] = labelToPathA.map {
-      case ( label, path ) => path -> label
-    }
-    val labelToPathB: Map[Label, String] = GraphOps.uniqueNames( B )( R.root( B ) ).map {
-      case ( label, path ) => label -> path.map( _.show ).reduce( _ + _ )
-    }
-    val pathToLabelB: Map[String, Label] = labelToPathB.map {
-      case ( label, path ) => path -> label
-    }
+    val nodesA: List[NonEmptyList[Label]] = GraphOps.nodes( A )
+    val nodesB: List[NonEmptyList[Label]] = GraphOps.nodes( B )
 
-    val ANamed = GraphOps.map( A )( labelToPathA )
-    val BNamed = GraphOps.map( B )( labelToPathB )
+    val pathToLabelA: Map[String, NonEmptyList[Label]] = nodesA.map( n => n.show -> n ).toMap
+    val pathToLabelB: Map[String, NonEmptyList[Label]] = nodesB.map( n => n.show -> n ).toMap
+
     val placeholder = "-"
-    val alignments =
+    val alignments: Set[Alignment[String]] =
       NeedlemanWunsch(
         placeholder,
-        GraphOps.allNodes( ANamed ).toArray,
-        GraphOps.allNodes( BNamed ).toArray
+        nodesA.map( _.show ).toArray,
+        nodesB.map( _.show ).toArray
       )
 
-    val parentsA = GraphOps.parents( ANamed )
-    val parentsB = GraphOps.parents( BNamed )
+    //val parentsA: Map[String, String] = GraphOps.parents( ANamed )
+    //val parentsB: Map[String, String] = GraphOps.parents( BNamed )
     val comparedGraphs =
       alignments
-        .foldLeft( GraphVisitation( C.create( Diff.same( labelToPathA( R.root( A ) ) ) ), Set.empty[String] ) ) {
+        .foldLeft( GraphVisitation( C.create( Diff.same( R.root( A ) ) ), Set.empty[String] ) ) {
           case ( visitation, Alignment( left, right ) ) =>
             left.zip( right ).foldLeft( visitation ) {
               case ( GraphVisitation( result, visited ), ( `placeholder`, r ) ) =>
-                val parent = parentsB( r )
-                val parentDiff = GraphOps.findUnsafe( result )( _.value === parent )
-                GraphVisitation( E.newEdge( result )( parentDiff, Diff.added( r ) ), visited + r )
+                val rLabel = pathToLabelB( r )
+                val parent = rLabel.tail.toNel.getOrElse( NonEmptyList.one( R.root( B ) ) )
+                val parentDiff = GraphOps.findPathUnsafe( result )( _.map( _.value ) === parent )
+                GraphVisitation( EC.connect( result )( parentDiff, Diff.added( rLabel.head ) ), visited + r )
               case ( GraphVisitation( result, visited ), ( l, `placeholder` ) ) =>
-                val parent = parentsA( l )
-                val parentDiff = GraphOps.findUnsafe( result )( _.value === parent )
-                GraphVisitation( E.newEdge( result )( parentDiff, Diff.removed( l ) ), visited + l )
+                val lLabel = pathToLabelA( l )
+                val parent = lLabel.tail.toNel.getOrElse( NonEmptyList.one( R.root( A ) ) )
+                val parentDiff = GraphOps.findPathUnsafe( result )( _.map( _.value ) === parent )
+                GraphVisitation( EC.connect( result )( parentDiff, Diff.removed( lLabel.head ) ), visited + l )
               case ( GraphVisitation( result, visited ), ( l, r ) ) if l === r =>
-                val parent = parentsA( l )
-                val parentDiff = GraphOps.findUnsafe( result )( _.value === parent )
-                GraphVisitation( E.newEdge( result )( parentDiff, Diff.same( l ) ), visited + l )
+                val lLabel = pathToLabelA( l )
+                val parent = lLabel.tail.toNel.getOrElse( NonEmptyList.one( R.root( A ) ) )
+                val parentDiff = GraphOps.findPathUnsafe( result )( _.map( _.value ) === parent )
+                GraphVisitation( EC.connect( result )( parentDiff, Diff.same( lLabel.head ) ), visited + l )
               case ( GraphVisitation( result, visited ), ( l, r ) ) if l =!= r =>
-                val parentL = parentsA( l )
-                val parentR = parentsB( r )
-                val parentDiffL = GraphOps.findUnsafe( result )( _.value === parentL )
-                val parentDiffR = GraphOps.findUnsafe( result )( _.value === parentR )
+                val lLabel = pathToLabelA( l )
+                val parentL = lLabel.tail.toNel.getOrElse( NonEmptyList.one( R.root( A ) ) )
+                val rLabel = pathToLabelB( r )
+                val parentR = rLabel.tail.toNel.getOrElse( NonEmptyList.one( R.root( B ) ) )
+                val parentDiffL = GraphOps.findPathUnsafe( result )( _.map( _.value ) === parentL )
+                val parentDiffR = GraphOps.findPathUnsafe( result )( _.map( _.value ) === parentR )
                 GraphVisitation(
-                  E.newEdge( E.newEdge( result )( parentDiffL, Diff.removed( l ) ) )(
+                  EC.connect( EC.connect( result )( parentDiffL, Diff.removed( lLabel.head ) ) )(
                     parentDiffR,
-                    Diff.added( r )
+                    Diff.added( rLabel.head )
                   ),
                   visited + l + r
                 )
             }
         }
         .result
-    GraphOps.map( comparedGraphs )( _.map( n => pathToLabelA.get( n ).getOrElse( pathToLabelB( n ) ) ) )
+    comparedGraphs
+    //GraphOps.map( comparedGraphs )( _.map( n => pathToLabelA.get( n ).getOrElse( pathToLabelB( n ) ) ) )
   }
 }
