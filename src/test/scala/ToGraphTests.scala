@@ -87,7 +87,7 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with Matcher
     )
     val generated_Left = ToGraph.create[Foo_Left, AdjacentGraph]( 'Foo, foo_Left )
     val generated_Right = ToGraph.create[Foo_Right, AdjacentGraph]( 'Foo, foo_Right )
-    val compared = Mismatches.compare( generated_Left, generated_Right )
+    val compared = Mismatches.compare( generated_Left, generated_Right, '- )
     val expected = AdjacentGraph
       .single( Diff.same( 'Foo ) )
       .connect( NonEmptyList.one( Diff.same( 'Foo ) ), Diff.same( 'a ) )

@@ -38,9 +38,10 @@ object Diff {
   }
 }
 object Mismatches {
-  def compare[Label: Eq: Show, G[_]](
+  def compare[Label: Eq, G[_]](
       A: G[Label],
-      B: G[Label]
+      B: G[Label],
+      placeholder: Label
     )(implicit
       DFS: DFS[G],
       BFS: BFS[G],
@@ -49,54 +50,41 @@ object Mismatches {
       E: Connect[G],
       O: Ordering[Label]
     ): G[Diff[Label]] = {
-
-    val nodesA: List[NonEmptyList[Label]] = GraphOps.nodes( A )
-    val nodesB: List[NonEmptyList[Label]] = GraphOps.nodes( B )
-
-    val pathToLabelA: Map[String, NonEmptyList[Label]] = nodesA.map( n => n.show -> n ).toMap
-    val pathToLabelB: Map[String, NonEmptyList[Label]] = nodesB.map( n => n.show -> n ).toMap
-
-    val placeholder = "-"
-    val alignments: Set[Alignment[String]] =
+    val alignments: Set[Alignment[NonEmptyList[Label]]] =
       NeedlemanWunsch(
-        placeholder,
-        nodesA.map( _.show ).toArray,
-        nodesB.map( _.show ).toArray
+        NonEmptyList.one( placeholder ),
+        GraphOps.nodes( A ).toArray,
+        GraphOps.nodes( B ).toArray
       )
     alignments
-      .foldLeft( GraphVisitation( C.create( Diff.same( R.root( A ) ) ), Set.empty[String] ) ) {
+      .foldLeft( GraphVisitation( C.create( Diff.same( R.root( A ) ) ), Set.empty[NonEmptyList[Label]] ) ) {
         case ( visitation, Alignment( left, right ) ) =>
           left.zip( right ).foldLeft( visitation ) {
-            case ( GraphVisitation( result, visited ), ( `placeholder`, r ) ) =>
-              val rLabel = pathToLabelB( r )
-              val parent = rLabel.tail.toNel
+            case ( GraphVisitation( result, visited ), ( NonEmptyList( `placeholder`, Nil ), r ) ) =>
+              val parent = r.tail.toNel
               val parentDiff = GraphOps.findPathUnsafe( result )( n => parent.exists( _ === n.map( _.value ) ) )
-              GraphVisitation( E.connect( result )( parentDiff, Diff.added( rLabel.head ) ), visited + r )
-            case ( GraphVisitation( result, visited ), ( l, `placeholder` ) ) =>
-              val lLabel = pathToLabelA( l )
-              val parent = lLabel.tail.toNel
+              GraphVisitation( E.connect( result )( parentDiff, Diff.added( r.head ) ), visited + r )
+            case ( GraphVisitation( result, visited ), ( l, NonEmptyList( `placeholder`, Nil ) ) ) =>
+              val parent = l.tail.toNel
               val parentDiff = GraphOps.findPathUnsafe( result )( n => parent.exists( _ === n.map( _.value ) ) )
-              GraphVisitation( E.connect( result )( parentDiff, Diff.removed( lLabel.head ) ), visited + l )
+              GraphVisitation( E.connect( result )( parentDiff, Diff.removed( l.head ) ), visited + l )
             case ( GraphVisitation( result, visited ), ( l, r ) ) if l === r =>
-              val lLabel = pathToLabelA( l )
               // the only case when lLabel.tail.toNel can be empty, is when both l and r are the root
-              lLabel.tail.toNel match {
+              l.tail.toNel match {
                 case Some( parent ) =>
                   val parentDiff = GraphOps.findPathUnsafe( result )( _.map( _.value ) === parent )
-                  GraphVisitation( E.connect( result )( parentDiff, Diff.same( lLabel.head ) ), visited + l )
+                  GraphVisitation( E.connect( result )( parentDiff, Diff.same( l.head ) ), visited + l )
                 case None => visitation
               }
             case ( GraphVisitation( result, visited ), ( l, r ) ) if l =!= r =>
-              val lLabel = pathToLabelA( l )
-              val parentL = lLabel.tail.toNel
-              val rLabel = pathToLabelB( r )
-              val parentR = rLabel.tail.toNel
+              val parentL = l.tail.toNel
+              val parentR = r.tail.toNel
               val parentDiffL = GraphOps.findPathUnsafe( result )( n => parentL.exists( _ === n.map( _.value ) ) )
               val parentDiffR = GraphOps.findPathUnsafe( result )( n => parentR.exists( _ === n.map( _.value ) ) )
               GraphVisitation(
-                E.connect( E.connect( result )( parentDiffL, Diff.removed( lLabel.head ) ) )(
+                E.connect( E.connect( result )( parentDiffL, Diff.removed( l.head ) ) )(
                   parentDiffR,
-                  Diff.added( rLabel.head )
+                  Diff.added( r.head )
                 ),
                 visited + l + r
               )
