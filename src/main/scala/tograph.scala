@@ -26,10 +26,6 @@ trait Hlists extends Bottom {
       N: ToGraph[T, G, Symbol]
     ) = new ToGraph[FieldType[K, H] :: T, G, Symbol] {
     def toGraph(parent: NonEmptyList[Symbol], c: labelled.FieldType[K, H] :: T ): G[Symbol] => G[Symbol] = { graph =>
-      //println( "-" * 30 )
-      //pprint.pprintln( parent )
-      //pprint.pprintln( key.value )
-      //pprint.pprintln( graph )
       N.toGraph( parent, c.tail )(
         C.toGraph( key.value :: parent, c.head )( A.connect( graph )( parent, key.value ) )
       )
