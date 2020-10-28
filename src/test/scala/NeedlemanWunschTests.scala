@@ -13,7 +13,7 @@ class NeedlemanWunschTests extends AnyFunSuite with TypeCheckedTripleEquals with
     val right = Array( 'e, 'b, 'f )
 
     assert(
-      NeedlemanWunsch( '-, left, right ) === Set(
+      NeedlemanWunsch.findAlignments( '-, left, right ) === List(
         NeedlemanWunsch.Alignment( List( 'a, 'b, 'c, 'd ), List( 'e, 'b, '-, 'f ) ),
         NeedlemanWunsch.Alignment( List( 'a, 'b, 'c, 'd ), List( 'e, 'b, 'f, '- ) )
       )
@@ -24,7 +24,7 @@ class NeedlemanWunschTests extends AnyFunSuite with TypeCheckedTripleEquals with
     val right = Array( 'e, 'b, 'x )
 
     assert(
-      NeedlemanWunsch( '-, left, right ) === Set(
+      NeedlemanWunsch.findAlignments( '-, left, right ) === List(
         NeedlemanWunsch.Alignment( List( 'a, '-, '- ), List( 'e, 'b, 'x ) ),
         NeedlemanWunsch.Alignment( List( '-, 'a, '- ), List( 'e, 'b, 'x ) ),
         NeedlemanWunsch.Alignment( List( '-, '-, 'a ), List( 'e, 'b, 'x ) )
@@ -36,7 +36,7 @@ class NeedlemanWunschTests extends AnyFunSuite with TypeCheckedTripleEquals with
     val right = Array( 'a, 'b, 'x )
 
     assert(
-      NeedlemanWunsch( '-, left, right ) === Set(
+      NeedlemanWunsch.findAlignments( '-, left, right ) === List(
         NeedlemanWunsch.Alignment( List( 'a, '-, '- ), List( 'a, 'b, 'x ) )
       )
     )
@@ -46,7 +46,7 @@ class NeedlemanWunschTests extends AnyFunSuite with TypeCheckedTripleEquals with
     val right = Array( 'e, 'b, 'a )
 
     assert(
-      NeedlemanWunsch( '-, left, right ) === Set(
+      NeedlemanWunsch.findAlignments( '-, left, right ) === List(
         NeedlemanWunsch.Alignment( List( '-, '-, 'a ), List( 'e, 'b, 'a ) )
       )
     )
@@ -56,7 +56,7 @@ class NeedlemanWunschTests extends AnyFunSuite with TypeCheckedTripleEquals with
     val right = Array( 'e, 'a, 'x )
 
     assert(
-      NeedlemanWunsch( '-, left, right ) === Set(
+      NeedlemanWunsch.findAlignments( '-, left, right ) === List(
         NeedlemanWunsch.Alignment( List( '-, 'a, '- ), List( 'e, 'a, 'x ) )
       )
     )
@@ -66,7 +66,7 @@ class NeedlemanWunschTests extends AnyFunSuite with TypeCheckedTripleEquals with
     val right = Array( 'e, 'a, 'x )
 
     assert(
-      NeedlemanWunsch( '-, left, right ) === Set(
+      NeedlemanWunsch.findAlignments( '-, left, right ) === List(
         NeedlemanWunsch.Alignment( List( 'e, '-, 'x ), List( 'e, 'a, 'x ) )
       )
     )

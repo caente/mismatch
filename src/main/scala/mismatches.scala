@@ -50,8 +50,8 @@ object Mismatches {
       E: Connect[G],
       O: Ordering[Label]
     ): G[Diff[Label]] = {
-    val alignments: Set[Alignment[NonEmptyList[Label]]] =
-      NeedlemanWunsch(
+    val alignments: List[Alignment[NonEmptyList[Label]]] =
+      NeedlemanWunsch.findAlignments(
         NonEmptyList.one( placeholder ),
         GraphOps.nodes( A ).toArray,
         GraphOps.nodes( B ).toArray

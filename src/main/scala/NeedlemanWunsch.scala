@@ -17,11 +17,11 @@ import matrices._
 
 object NeedlemanWunsch {
   case class Alignment[A](left: List[A], right: List[A] )
-  def apply[Label: ClassTag: Eq](
+  def findAlignments[Label: ClassTag: Eq](
       placeholder: Label,
       left: Array[Label],
       right: Array[Label]
-    ): Set[Alignment[Label]] = {
+    ): List[Alignment[Label]] = {
     val m = NeedlemanWunschMatrix( placeholder, left, right )
     val matrix = scoredMatrix( m )
     alignments(
@@ -29,7 +29,7 @@ object NeedlemanWunsch {
       row = matrix.rows - 1,
       col = matrix.cols - 1,
       matrix = matrix,
-      acc = Set.empty[Alignment[Label]]
+      acc = List.empty[Alignment[Label]]
     )
   }
 
@@ -38,8 +38,8 @@ object NeedlemanWunsch {
       row: Int,
       col: Int,
       matrix: DenseMatrix[Scores[A]],
-      acc: Set[Alignment[A]]
-    ): Set[Alignment[A]] = {
+      acc: List[Alignment[A]]
+    ): List[Alignment[A]] = {
     matrix( row, col ) match {
       case Corner( _ ) => acc
       case LeftBorder( item, score ) =>
@@ -60,7 +60,7 @@ object NeedlemanWunsch {
         )
       case InnerNode( rowHeader, colHeader, _, Neighbors( left, diag, top ) ) =>
         val scores = List( left, diag, top ).groupBy( _.score )
-        val directions: Set[Score] = scores.maxBy( _._1 )._2.toSet
+        val directions: List[Score] = scores.maxBy( _._1 )._2
         directions.flatMap {
           case Diag( _ ) =>
             alignments(
@@ -142,8 +142,8 @@ object NeedlemanWunsch {
     val matrixWithRows = DenseMatrix.horzcat( scoredRowVector.toDenseMatrix.t, matrixWithCols )
     matrixWithRows
   }
-  private def updateAccumulator[A](row: A, col: A, acc: Set[Alignment[A]] ): Set[Alignment[A]] = {
-    if (acc.isEmpty) Set( Alignment( List( row ), List( col ) ) )
+  private def updateAccumulator[A](row: A, col: A, acc: List[Alignment[A]] ): List[Alignment[A]] = {
+    if (acc.isEmpty) List( Alignment( List( row ), List( col ) ) )
     else
       acc.map {
         case Alignment( left, right ) =>
