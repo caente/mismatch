@@ -5,14 +5,15 @@ import shapeless._
 import labelled._
 import ops.record._
 import cats.implicits._
+import cats.data.NonEmptyList
 
 trait ToGraph[C, G[_], Label] {
-  def toGraph(parent: Label, c: C ): G[Label] => G[Label]
+  def toGraph(parent: NonEmptyList[Label], c: C ): G[Label] => G[Label]
 }
 
 trait Bottom {
   implicit def base[A, G[_]] = new ToGraph[A, G, Symbol] {
-    def toGraph(parent: Symbol, c: A ): G[Symbol] => G[Symbol] = identity
+    def toGraph(parent: NonEmptyList[Symbol], c: A ): G[Symbol] => G[Symbol] = identity
   }
 }
 
@@ -20,32 +21,36 @@ trait Hlists extends Bottom {
   implicit def ccons[H, K <: Symbol, T <: HList, G[_]](
       implicit
       key: Witness.Aux[K],
-      A: NewEdge[G],
+      A: Connect[G],
       C: ToGraph[H, G, Symbol],
       N: ToGraph[T, G, Symbol]
     ) = new ToGraph[FieldType[K, H] :: T, G, Symbol] {
-    def toGraph(parent: Symbol, c: labelled.FieldType[K, H] :: T ): G[Symbol] => G[Symbol] = { graph =>
+    def toGraph(parent: NonEmptyList[Symbol], c: labelled.FieldType[K, H] :: T ): G[Symbol] => G[Symbol] = { graph =>
+      //println( "-" * 30 )
+      //pprint.pprintln( parent )
+      //pprint.pprintln( key.value )
+      //pprint.pprintln( graph )
       N.toGraph( parent, c.tail )(
-        C.toGraph( key.value, c.head )( A.newEdge( graph )( parent, key.value ) )
+        C.toGraph( key.value :: parent, c.head )( A.connect( graph )( parent, key.value ) )
       )
     }
   }
+
   implicit def hnil[G[_]] = new ToGraph[HNil, G, Symbol] {
-    def toGraph(parent: Symbol, c: HNil ): G[Symbol] => G[Symbol] = identity
+    def toGraph(parent: NonEmptyList[Symbol], c: HNil ): G[Symbol] => G[Symbol] = identity
   }
   implicit def cnil[G[_]]: ToGraph[CNil, G, Symbol] = new ToGraph[CNil, G, Symbol] {
-    def toGraph(parent: Symbol, c: CNil ): G[Symbol] => G[Symbol] = identity
+    def toGraph(parent: NonEmptyList[Symbol], c: CNil ): G[Symbol] => G[Symbol] = identity
   }
 
   implicit def coproduct[G[_], H, T <: Coproduct, K <: Symbol](
       implicit
       key: Witness.Aux[K],
-      A: NewEdge[G],
       C: ToGraph[H, G, Symbol],
       N: ToGraph[T, G, Symbol]
     ): ToGraph[FieldType[K, H] :+: T, G, Symbol] =
     new ToGraph[FieldType[K, H] :+: T, G, Symbol] {
-      def toGraph(parent: Symbol, c: FieldType[K, H] :+: T ): G[Symbol] => G[Symbol] = { graph =>
+      def toGraph(parent: NonEmptyList[Symbol], c: FieldType[K, H] :+: T ): G[Symbol] => G[Symbol] = { graph =>
         c match {
           case Inl( h ) =>
             C.toGraph( parent, h )( graph )
@@ -57,13 +62,13 @@ trait Hlists extends Bottom {
 }
 object ToGraph extends Hlists {
   def create[C, G[_]](root: Symbol, c: C )(implicit G: ToGraph[C, G, Symbol], C: CreateGraph[G] ) =
-    G.toGraph( root, c )( C.create( root ) )
+    G.toGraph( NonEmptyList.one( root ), c )( C.create( root ) )
 
   implicit def option[P, G[_]](
       implicit
       T: ToGraph[P, G, Symbol]
     ): ToGraph[Option[P], G, Symbol] = new ToGraph[Option[P], G, Symbol] {
-    def toGraph(parent: Symbol, c: Option[P] ): G[Symbol] => G[Symbol] = { graph =>
+    def toGraph(parent: NonEmptyList[Symbol], c: Option[P] ): G[Symbol] => G[Symbol] = { graph =>
       c match {
         case Some( p ) => T.toGraph( parent, p )( graph )
         case None      => graph
@@ -76,6 +81,6 @@ object ToGraph extends Hlists {
       gen: LabelledGeneric.Aux[P, C],
       G: Lazy[ToGraph[C, G, Symbol]]
     ): ToGraph[P, G, Symbol] = new ToGraph[P, G, Symbol] {
-    def toGraph(parent: Symbol, p: P ): G[Symbol] => G[Symbol] = G.value.toGraph( parent, gen.to( p ) )
+    def toGraph(parent: NonEmptyList[Symbol], p: P ): G[Symbol] => G[Symbol] = G.value.toGraph( parent, gen.to( p ) )
   }
 }
