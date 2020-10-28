@@ -79,7 +79,8 @@ object Mismatches {
               GraphVisitation( E.connect( result )( parentDiff, Diff.removed( lLabel.head ) ), visited + l )
             case ( GraphVisitation( result, visited ), ( l, r ) ) if l === r =>
               val lLabel = pathToLabelA( l )
-              lLabel.tail.toNel match { // the only case when lLabel.tail.toNel can be empty, is when both l and r are the root
+              // the only case when lLabel.tail.toNel can be empty, is when both l and r are the root
+              lLabel.tail.toNel match {
                 case Some( parent ) =>
                   val parentDiff = GraphOps.findPathUnsafe( result )( _.map( _.value ) === parent )
                   GraphVisitation( E.connect( result )( parentDiff, Diff.same( lLabel.head ) ), visited + l )
