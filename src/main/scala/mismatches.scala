@@ -69,17 +69,17 @@ object Mismatches {
           left.zip( right ).foldLeft( visitation ) {
             case ( GraphVisitation( result, visited ), ( `placeholder`, r ) ) =>
               val rLabel = pathToLabelB( r )
-              val parent = rLabel.tail.toNel.get
+              val parent = rLabel.tail.toNel.get // this should never be an empty list
               val parentDiff = GraphOps.findPathUnsafe( result )( _.map( _.value ) === parent )
               GraphVisitation( E.connect( result )( parentDiff, Diff.added( rLabel.head ) ), visited + r )
             case ( GraphVisitation( result, visited ), ( l, `placeholder` ) ) =>
               val lLabel = pathToLabelA( l )
-              val parent = lLabel.tail.toNel.get
+              val parent = lLabel.tail.toNel.get // this should never be an empty list
               val parentDiff = GraphOps.findPathUnsafe( result )( _.map( _.value ) === parent )
               GraphVisitation( E.connect( result )( parentDiff, Diff.removed( lLabel.head ) ), visited + l )
             case ( GraphVisitation( result, visited ), ( l, r ) ) if l === r =>
               val lLabel = pathToLabelA( l )
-              lLabel.tail.toNel match {
+              lLabel.tail.toNel match { // the only case when lLabel.tail.toNel can be empty, is when both l and r are the root
                 case Some( parent ) =>
                   val parentDiff = GraphOps.findPathUnsafe( result )( _.map( _.value ) === parent )
                   GraphVisitation( E.connect( result )( parentDiff, Diff.same( lLabel.head ) ), visited + l )
@@ -87,9 +87,9 @@ object Mismatches {
               }
             case ( GraphVisitation( result, visited ), ( l, r ) ) if l =!= r =>
               val lLabel = pathToLabelA( l )
-              val parentL = lLabel.tail.toNel.get
+              val parentL = lLabel.tail.toNel.get // this should never be an empty list
               val rLabel = pathToLabelB( r )
-              val parentR = rLabel.tail.toNel.get
+              val parentR = rLabel.tail.toNel.get // this should never be an empty list
               val parentDiffL = GraphOps.findPathUnsafe( result )( _.map( _.value ) === parentL )
               val parentDiffR = GraphOps.findPathUnsafe( result )( _.map( _.value ) === parentR )
               GraphVisitation(
