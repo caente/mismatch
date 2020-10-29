@@ -131,9 +131,9 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
     val generated = ToGraph.create[Foo, AdjacentGraph]( 'Foo, foo )
     val expected = AdjacentGraph
       .single( f )
-      .addEdge( f, a )
-      .addEdge( a, i )
-      .addEdge( f, b )
+      .connect( NonEmptyList.one( f ), a )
+      .connect( NonEmptyList.one( f ), b )
+      .connect( NonEmptyList.of( a, f ), Leaf( 'i, "1" ) )
     assert( generated === expected )
   }
   test( "generate option/Some" ) {
@@ -144,10 +144,10 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
     val generated = ToGraph.create[Foo, AdjacentGraph]( 'Foo, foo )
     val expected = AdjacentGraph
       .single( f )
-      .addEdge( f, a )
-      .addEdge( a, i )
-      .addEdge( f, b )
-      .addEdge( b, i )
+      .connect( NonEmptyList.one( f ), a )
+      .connect( NonEmptyList.one( f ), b )
+      .connect( NonEmptyList.of( a, f ), Leaf( 'i, "1" ) )
+      .connect( NonEmptyList.of( b, f ), Leaf( 'i, "1" ) )
     assert( generated === expected )
   }
   test( "generate sealed trait" ) {
@@ -159,10 +159,10 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
     val generated = ToGraph.create[Foo, AdjacentGraph]( 'Foo, foo )
     val expected = AdjacentGraph
       .single( f )
-      .addEdge( f, a )
-      .addEdge( f, b )
-      .addEdge( a, i )
-      .addEdge( b, i )
+      .connect( NonEmptyList.one( f ), a )
+      .connect( NonEmptyList.one( f ), b )
+      .connect( NonEmptyList.of( a, f ), Leaf( 'i, "1" ) )
+      .connect( NonEmptyList.of( b, f ), Leaf( 'i, "1" ) )
     assert( generated === expected )
   }
   test( "same name in two branches" ) {
@@ -174,7 +174,7 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
         b = B( i = 1 )
       ),
       b = A(
-        b = B( i = 1 )
+        b = B( i = 2 )
       )
     )
     val generated = ToGraph.create[Foo, AdjacentGraph]( 'Foo, foo )
@@ -183,9 +183,9 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
       .connect( NonEmptyList.one( f ), a )
       .connect( NonEmptyList.one( f ), b )
       .connect( NonEmptyList.of( a, f ), b )
-      .connect( NonEmptyList.of( b, a, f ), i )
+      .connect( NonEmptyList.of( b, a, f ), Leaf( 'i, "1" ) )
       .connect( NonEmptyList.of( b, f ), b )
-      .connect( NonEmptyList.of( b, b, f ), i )
+      .connect( NonEmptyList.of( b, b, f ), Leaf( 'i, "2" ) )
     assert(
       generated === expected,
       s"""
