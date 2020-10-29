@@ -11,19 +11,34 @@ import tograph._
 import cats.implicits._
 import cats.data.NonEmptyList
 
-class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with Matchers with SymbolInstances {
+class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolInstances {
+  val f: Labelled.AsString = Node( 'Foo )
+  val a: Labelled.AsString = Node( 'a )
+  val b: Labelled.AsString = Node( 'b )
+  val c: Labelled.AsString = Node( 'c )
+  val d: Labelled.AsString = Node( 'd )
+  val h: Labelled.AsString = Node( 'h )
+  val g: Labelled.AsString = Node( 'g )
+  val k: Labelled.AsString = Node( 'k )
+  val e: Labelled.AsString = Node( 'e )
+  val i: Labelled.AsString = Node( 'i )
+  val l: Labelled.AsString = Node( 'l )
+  val j: Labelled.AsString = Node( 'j )
+
   test( "manual vs generic" ) {
     val manual =
       AdjacentGraph
-        .single( 'Foo )
-        .addEdge( 'Foo, 'b )
-        .addEdge( 'Foo, 'a )
-        .addEdge( 'a, 'c )
-        .addEdge( 'a, 'd )
-        .addEdge( 'b, 'h )
-        .addEdge( 'b, 'g )
-        .addEdge( 'g, 'k )
-        .addEdge( 'c, 'e )
+        .single( f )
+        .connect( NonEmptyList.one( f ), b )
+        .connect( NonEmptyList.one( f ), a )
+        .connect( NonEmptyList.of( a, f ), c )
+        .connect( NonEmptyList.of( a, f ), c )
+        .connect( NonEmptyList.of( a, f ), Leaf( 'd, "1" ) )
+        .connect( NonEmptyList.of( b, f ), Leaf( 'h, "1" ) )
+        .connect( NonEmptyList.of( b, f ), g )
+        .connect( NonEmptyList.of( g, b, f ), Leaf( 'k, "1" ) )
+        .connect( NonEmptyList.of( c, a, f ), Leaf( 'e, "1" ) )
+
     case class C(e: Int )
     case class A(c: C, d: Int )
     case class G(k: Int )
@@ -87,23 +102,26 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with Matcher
     )
     val generated_Left = ToGraph.create[Foo_Left, AdjacentGraph]( 'Foo, foo_Left )
     val generated_Right = ToGraph.create[Foo_Right, AdjacentGraph]( 'Foo, foo_Right )
-    val compared = Mismatches.compare( generated_Left, generated_Right, '- )
+    val compared = Mismatches.compare( generated_Left, generated_Right, Node[String]( '- ) )
     val expected = AdjacentGraph
-      .single( Diff.same( 'Foo ) )
-      .connect( NonEmptyList.one( Diff.same( 'Foo ) ), Diff.same( 'a ) )
-      .connect( NonEmptyList.one( Diff.same( 'Foo ) ), Diff.added( 'l ) )
-      .connect( NonEmptyList.of( Diff.added( 'l ), Diff.same( 'Foo ) ), Diff.added( 'g ) )
-      .connect( NonEmptyList.of( Diff.added( 'g ), Diff.added( 'l ), Diff.same( 'Foo ) ), Diff.added( 'k ) )
-      .connect( NonEmptyList.of( Diff.added( 'l ), Diff.same( 'Foo ) ), Diff.added( 'h ) )
-      .connect( NonEmptyList.of( Diff.same( 'a ), Diff.same( 'Foo ) ), Diff.same( 'd ) )
-      .connect( NonEmptyList.of( Diff.same( 'a ), Diff.same( 'Foo ) ), Diff.same( 'c ) )
-      .connect( NonEmptyList.of( Diff.same( 'c ), Diff.same( 'a ), Diff.same( 'Foo ) ), Diff.removed( 'e ) )
-      .connect( NonEmptyList.of( Diff.same( 'c ), Diff.same( 'a ), Diff.same( 'Foo ) ), Diff.added( 'j ) )
-      .connect( NonEmptyList.one( Diff.same( 'Foo ) ), Diff.removed( 'b ) )
-      .connect( NonEmptyList.of( Diff.removed( 'b ), Diff.same( 'Foo ) ), Diff.removed( 'g ) )
-      .connect( NonEmptyList.of( Diff.removed( 'g ), Diff.removed( 'b ), Diff.same( 'Foo ) ), Diff.removed( 'k ) )
-      .connect( NonEmptyList.of( Diff.removed( 'b ), Diff.same( 'Foo ) ), Diff.removed( 'h ) )
-    assert( GraphOps.nodes( compared ) == GraphOps.nodes( expected ) )
+      .single( Diff.same( f ) )
+      .connect( NonEmptyList.one( Diff.same( f ) ), Diff.same( a ) )
+      .connect( NonEmptyList.one( Diff.same( f ) ), Diff.added( l ) )
+      .connect( NonEmptyList.of( Diff.added( l ), Diff.same( f ) ), Diff.added( g ) )
+      .connect( NonEmptyList.of( Diff.added( g ), Diff.added( l ), Diff.same( f ) ), Diff.added( Leaf( 'k, "1" ) ) )
+      .connect( NonEmptyList.of( Diff.added( l ), Diff.same( f ) ), Diff.added( Leaf( 'h, "1" ) ) )
+      .connect( NonEmptyList.of( Diff.same( a ), Diff.same( f ) ), Diff.same( Leaf( 'd, "1" ) ) )
+      .connect( NonEmptyList.of( Diff.same( a ), Diff.same( f ) ), Diff.same( c ) )
+      .connect( NonEmptyList.of( Diff.same( c ), Diff.same( a ), Diff.same( f ) ), Diff.removed( Leaf( 'e, "1" ) ) )
+      .connect( NonEmptyList.of( Diff.same( c ), Diff.same( a ), Diff.same( f ) ), Diff.added( Leaf( 'j, "1" ) ) )
+      .connect( NonEmptyList.one( Diff.same( f ) ), Diff.removed( b ) )
+      .connect( NonEmptyList.of( Diff.removed( b ), Diff.same( f ) ), Diff.removed( g ) )
+      .connect(
+        NonEmptyList.of( Diff.removed( g ), Diff.removed( b ), Diff.same( f ) ),
+        Diff.removed( Leaf( 'k, "1" ) )
+      )
+      .connect( NonEmptyList.of( Diff.removed( b ), Diff.same( f ) ), Diff.removed( Leaf( 'h, "1" ) ) )
+    assert( GraphOps.nodes( compared ).toSet == GraphOps.nodes( expected ).toSet )
   }
   test( "generate option/None" ) {
     case class A(i: Int )
@@ -112,10 +130,10 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with Matcher
     val foo = Foo( Some( A( 1 ) ), None )
     val generated = ToGraph.create[Foo, AdjacentGraph]( 'Foo, foo )
     val expected = AdjacentGraph
-      .single( 'Foo )
-      .addEdge( 'Foo, 'a )
-      .addEdge( 'a, 'i )
-      .addEdge( 'Foo, 'b )
+      .single( f )
+      .addEdge( f, a )
+      .addEdge( a, i )
+      .addEdge( f, b )
     assert( generated === expected )
   }
   test( "generate option/Some" ) {
@@ -125,11 +143,11 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with Matcher
     val foo = Foo( Some( A( 1 ) ), Some( B( 1 ) ) )
     val generated = ToGraph.create[Foo, AdjacentGraph]( 'Foo, foo )
     val expected = AdjacentGraph
-      .single( 'Foo )
-      .addEdge( 'Foo, 'a )
-      .addEdge( 'a, 'i )
-      .addEdge( 'Foo, 'b )
-      .addEdge( 'b, 'i )
+      .single( f )
+      .addEdge( f, a )
+      .addEdge( a, i )
+      .addEdge( f, b )
+      .addEdge( b, i )
     assert( generated === expected )
   }
   test( "generate sealed trait" ) {
@@ -140,11 +158,11 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with Matcher
     val foo = Foo( a = A2( 1 ), b = A1( 1 ) )
     val generated = ToGraph.create[Foo, AdjacentGraph]( 'Foo, foo )
     val expected = AdjacentGraph
-      .single( 'Foo )
-      .addEdge( 'Foo, 'a )
-      .addEdge( 'Foo, 'b )
-      .addEdge( 'a, 'i )
-      .addEdge( 'b, 'i )
+      .single( f )
+      .addEdge( f, a )
+      .addEdge( f, b )
+      .addEdge( a, i )
+      .addEdge( b, i )
     assert( generated === expected )
   }
   test( "same name in two branches" ) {
@@ -161,13 +179,13 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with Matcher
     )
     val generated = ToGraph.create[Foo, AdjacentGraph]( 'Foo, foo )
     val expected = AdjacentGraph
-      .single( 'Foo )
-      .connect( NonEmptyList.one( 'Foo ), 'a )
-      .connect( NonEmptyList.one( 'Foo ), 'b )
-      .connect( NonEmptyList.of( 'a, 'Foo ), 'b )
-      .connect( NonEmptyList.of( 'b, 'a, 'Foo ), 'i )
-      .connect( NonEmptyList.of( 'b, 'Foo ), 'b )
-      .connect( NonEmptyList.of( 'b, 'b, 'Foo ), 'i )
+      .single( f )
+      .connect( NonEmptyList.one( f ), a )
+      .connect( NonEmptyList.one( f ), b )
+      .connect( NonEmptyList.of( a, f ), b )
+      .connect( NonEmptyList.of( b, a, f ), i )
+      .connect( NonEmptyList.of( b, f ), b )
+      .connect( NonEmptyList.of( b, b, f ), i )
     assert(
       generated === expected,
       s"""
