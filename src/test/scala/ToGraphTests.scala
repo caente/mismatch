@@ -91,7 +91,7 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
         c = C_Right(
           j = 1
         ),
-        d = 1
+        d = 2
       ),
       l = L_Right(
         h = 1,
@@ -110,7 +110,8 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
       .connect( NonEmptyList.of( Diff.added( l ), Diff.same( f ) ), Diff.added( g ) )
       .connect( NonEmptyList.of( Diff.added( g ), Diff.added( l ), Diff.same( f ) ), Diff.added( Leaf( 'k, "1" ) ) )
       .connect( NonEmptyList.of( Diff.added( l ), Diff.same( f ) ), Diff.added( Leaf( 'h, "1" ) ) )
-      .connect( NonEmptyList.of( Diff.same( a ), Diff.same( f ) ), Diff.same( Leaf( 'd, "1" ) ) )
+      .connect( NonEmptyList.of( Diff.same( a ), Diff.same( f ) ), Diff.removed( Leaf( 'd, "1" ) ) )
+      .connect( NonEmptyList.of( Diff.same( a ), Diff.same( f ) ), Diff.added( Leaf( 'd, "2" ) ) )
       .connect( NonEmptyList.of( Diff.same( a ), Diff.same( f ) ), Diff.same( c ) )
       .connect( NonEmptyList.of( Diff.same( c ), Diff.same( a ), Diff.same( f ) ), Diff.removed( Leaf( 'e, "1" ) ) )
       .connect( NonEmptyList.of( Diff.same( c ), Diff.same( a ), Diff.same( f ) ), Diff.added( Leaf( 'j, "1" ) ) )
