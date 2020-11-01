@@ -70,4 +70,21 @@ class MismatchesTests extends AnyFunSuite with TypeCheckedTripleEquals with Matc
     """
     )
   }
+  test( "filter graph" ) {
+    val diff = AdjacentGraph
+      .single( Diff.same( 'Foo ) )
+      .addEdge( Diff.same( 'Foo ), Diff.same( 'a ) )
+      .addEdge( Diff.same( 'Foo ), Diff.removed( 'b ) )
+      .addEdge( Diff.same( 'a ), Diff.same( 'i ) )
+      .addEdge( Diff.removed( 'b ), Diff.removed( 'i ) )
+    pprint.pprintln(
+      GraphOps.filter( diff )(
+        l =>
+          l match {
+            case Same( a ) => true
+            case _         => false
+          }
+      )
+    )
+  }
 }

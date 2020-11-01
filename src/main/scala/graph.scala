@@ -159,6 +159,59 @@ object GraphOps {
       .result
   }
 
+  def subGraph[Label: Eq: Ordering, G[_]](
+      g: G[Label]
+    )(fromNode: NonEmptyList[Label]
+    )(implicit G: DFS[G],
+      C: CreateGraph[G],
+      Add: Connect[G]
+    ): G[Label] =
+    G.dfs( g )( fromNode, C.create( fromNode.head ), Set() ) { ( parent, child, newGraph ) =>
+        Add.connect( newGraph )( parent, child )
+      }
+      .result
+
+  def addSubGraph[G[_], Label: Eq: Ordering](
+      current: G[Label]
+    )(node: NonEmptyList[Label],
+      graph: G[Label]
+    )(implicit G: DFS[G],
+      R: Root[G],
+      A: Connect[G]
+    ): G[Label] = {
+    val root = R.root( current )
+    G.dfs( graph )( NonEmptyList.one( root ), A.connect( current )( node, root ), Set() )(
+        ( parent, child, newGraph ) => A.connect( newGraph )( parent, child )
+      )
+      .result
+  }
+
+  def filter[G[_], Label](
+      g: G[Label]
+    )(f: Label => Boolean
+    )(implicit G: DFS[G],
+      R: Root[G],
+      C: CreateGraph[G],
+      A: Connect[G],
+      E: Eq[Label],
+      O: Ordering[Label]
+    ): G[Label] = {
+    val root = R.root( g )
+    if (!f( root )) {
+      throw new IllegalArgumentException( "don't know what to do here yet" )
+    } else {
+      G.dfs( g )( NonEmptyList.one( root ), C.create( root ), Set() )(
+          ( parent, child, graph ) =>
+            if (f( child )) {
+              A.connect( graph )( parent, child )
+            } else {
+              graph
+            }
+        )
+        .result
+    }
+  }
+
   def findPath[G[_], Label](
       g: G[Label]
     )(f: NonEmptyList[Label] => Boolean

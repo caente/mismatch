@@ -198,5 +198,5 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
       }}
     """
     )
-  }
+  } 
 }
