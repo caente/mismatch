@@ -1,12 +1,15 @@
 package algorithm
 package tests
 
+import cats.data.NonEmptyList
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 import org.scalactic.TypeCheckedTripleEquals
 import cats.instances.SymbolInstances
 import graph._
 import cats.implicits._
+import cats.Eq
+import algorithm.Mismatches.onlyMismatches
 
 class MismatchesTests extends AnyFunSuite with TypeCheckedTripleEquals with Matchers with SymbolInstances {
   test( "the first test" ) {
@@ -70,21 +73,24 @@ class MismatchesTests extends AnyFunSuite with TypeCheckedTripleEquals with Matc
     """
     )
   }
-  test( "filter graph" ) {
+  test( "show only mismatches" ) {
     val diff = AdjacentGraph
       .single( Diff.same( 'Foo ) )
       .addEdge( Diff.same( 'Foo ), Diff.same( 'a ) )
       .addEdge( Diff.same( 'Foo ), Diff.removed( 'b ) )
-      .addEdge( Diff.same( 'a ), Diff.same( 'i ) )
+      .addEdge( Diff.same( 'a ), Diff.removed( 'i ) )
+      .addEdge( Diff.same( 'a ), Diff.added( 'c ) )
+      .addEdge( Diff.same( 'a ), Diff.same( 'd ) )
       .addEdge( Diff.removed( 'b ), Diff.removed( 'i ) )
-    pprint.pprintln(
-      GraphOps.filter( diff )(
-        l =>
-          l match {
-            case Same( a ) => true
-            case _         => false
-          }
-      )
-    )
+    val diffsOnly = onlyMismatches( diff )
+    val expected = AdjacentGraph
+      .single( Diff.same( 'Foo ) )
+      .addEdge( Diff.same( 'Foo ), Diff.same( 'a ) )
+      .addEdge( Diff.same( 'Foo ), Diff.removed( 'b ) )
+      .addEdge( Diff.same( 'a ), Diff.removed( 'i ) )
+      .addEdge( Diff.same( 'a ), Diff.added( 'c ) )
+      .addEdge( Diff.removed( 'b ), Diff.removed( 'i ) )
+    assert( diffsOnly === expected )
   }
+
 }

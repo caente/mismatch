@@ -186,6 +186,26 @@ object GraphOps {
       .result
   }
 
+  def dfs[F[_], Label, B, G[_]](
+      g: G[Label]
+    )(start: NonEmptyList[Label],
+      acc: F[B],
+      initiallyVisited: Set[NonEmptyList[Label]]
+    )(combine: (NonEmptyList[Label], Label, F[B] ) => F[B],
+      stop: F[B] => Boolean = (_: F[B]) => false
+    )(implicit DFS: DFS[G]
+    ): GraphVisitation[F, NonEmptyList[Label], B] = DFS.dfs( g )( start, acc, initiallyVisited )( combine, stop )
+
+  def bfs[F[_], Label, B, G[_]](
+      g: G[Label]
+    )(start: NonEmptyList[Label],
+      acc: F[B],
+      initiallyVisited: Set[NonEmptyList[Label]]
+    )(combine: (NonEmptyList[Label], Label, F[B] ) => F[B],
+      stop: F[B] => Boolean = (_: F[B]) => false
+    )(implicit BFS: BFS[G]
+    ): GraphVisitation[F, NonEmptyList[Label], B] = BFS.bfs( g )( start, acc, initiallyVisited )( combine, stop )
+
   def filter[G[_], Label](
       g: G[Label]
     )(f: Label => Boolean

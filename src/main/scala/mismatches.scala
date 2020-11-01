@@ -92,4 +92,34 @@ object Mismatches {
       }
       .result
   }
+
+  def onlyMismatches[G[_], Label: Eq: Ordering](
+      diff: G[Diff[Label]]
+    )(implicit
+      DFS: DFS[G],
+      R: Root[G],
+      C: CreateGraph[G],
+      A: Connect[G]
+    ): G[Diff[Label]] = {
+    val root = R.root( diff )
+    DFS
+      .dfs( diff )( NonEmptyList.one( root ), C.create( root ), Set() )(
+        combine = ( parent, child, graph ) => {
+          child match {
+            case Same( _ ) => graph
+            case _ =>
+              val graphWithParents =
+                parent.toList
+                  .dropRight( 1 ) //the last element is the root
+                  .foldRight( ( graph, NonEmptyList.one( root ) ) ) {
+                    case ( p, ( graph, previous ) ) =>
+                      ( A.connect( graph )( previous, p ), p :: previous )
+                  }
+                  ._1
+              A.connect( graphWithParents )( parent, child )
+          }
+        }
+      )
+      .result
+  }
 }
