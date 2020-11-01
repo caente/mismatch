@@ -77,19 +77,21 @@ class MismatchesTests extends AnyFunSuite with TypeCheckedTripleEquals with Matc
     val diff = AdjacentGraph
       .single( Diff.same( 'Foo ) )
       .addEdge( Diff.same( 'Foo ), Diff.same( 'a ) )
-      .addEdge( Diff.same( 'Foo ), Diff.removed( 'b ) )
+      .addEdge( Diff.same( 'Foo ), Diff.same( 'b ) )
       .addEdge( Diff.same( 'a ), Diff.removed( 'i ) )
       .addEdge( Diff.same( 'a ), Diff.added( 'c ) )
       .addEdge( Diff.same( 'a ), Diff.same( 'd ) )
-      .addEdge( Diff.removed( 'b ), Diff.removed( 'i ) )
+      .addEdge( Diff.same( 'a ), Diff.added( 'c ) )
+      .addEdge( Diff.same( 'b ), Diff.removed( 'i ) )
+      .addEdge( Diff.same( 'b ), Diff.same( 'x ) )
     val diffsOnly = onlyMismatches( diff )
     val expected = AdjacentGraph
       .single( Diff.same( 'Foo ) )
       .addEdge( Diff.same( 'Foo ), Diff.same( 'a ) )
-      .addEdge( Diff.same( 'Foo ), Diff.removed( 'b ) )
+      .addEdge( Diff.same( 'Foo ), Diff.same( 'b ) )
       .addEdge( Diff.same( 'a ), Diff.removed( 'i ) )
       .addEdge( Diff.same( 'a ), Diff.added( 'c ) )
-      .addEdge( Diff.removed( 'b ), Diff.removed( 'i ) )
+      .addEdge( Diff.same( 'b ), Diff.removed( 'i ) )
     assert( diffsOnly === expected )
   }
 
