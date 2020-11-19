@@ -25,6 +25,12 @@ object Labelled {
     def compare(x: Labelled[A], y: Labelled[A] ): Int = x.label.compare( y.label )
   }
   type AsString = Labelled[String]
+  implicit def show[A:Show]:Show[Labelled[A]] = new Show[Labelled[A]]{
+    def show(t: Labelled[A]): String = t match {
+      case Leaf(label, x) => label.toString + " -> " + x.show
+      case Node(label) => label.toString
+    }
+  }
 }
 case class Node[A](label: Symbol ) extends Labelled[A]
 case class Leaf[A](label: Symbol, a: A ) extends Labelled[A]
