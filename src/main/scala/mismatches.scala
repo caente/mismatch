@@ -29,11 +29,14 @@ object Diff {
   implicit def ord[A](implicit A: Ordering[A] ) = new Ordering[Diff[A]] {
     def compare(x: Diff[A], y: Diff[A] ): Int = A.compare( x.value, y.value )
   }
+  private def color(s: String )(msg: String ) = s + msg + Console.RESET
+  private val red = color( Console.RED ) _
+  private val green = color( Console.GREEN ) _
   implicit def show[A: Show]: Show[Diff[A]] = new Show[Diff[A]] {
     def show(t: Diff[A] ): String = t match {
-      case Added( a )   => s"Added(${a.show})"
-      case Removed( a ) => s"Removed(${a.show})"
-      case Same( a )    => s"${a.show}"
+      case Added( a )   => green( a.show )
+      case Removed( a ) => red( a.show )
+      case Same( a )    => a.show
     }
   }
 }
