@@ -92,22 +92,7 @@ class MismatchesTests extends AnyFunSuite with TypeCheckedTripleEquals with Matc
       .addEdge( Diff.same( 'a ), Diff.removed( 'i ) )
       .addEdge( Diff.same( 'a ), Diff.added( 'c ) )
       .addEdge( Diff.same( 'b ), Diff.removed( 'i ) )
+
     assert( diffsOnly === expected )
   }
-  test( "print graph" ) {
-    val diff = AdjacentGraph
-      .single( 'Foo )
-      .addEdge( 'Foo, 'a )
-      .addEdge( 'a, 'c )
-      .addEdge( 'a, 'd )
-      .addEdge( 'c, 'x )
-      .addEdge( 'c, 'i )
-      .addEdge( 'Foo, 'b )
-      .addEdge( 'b, 'h )
-      .addEdge( 'b, 'g )
-      .addEdge( 'g, 'r )
-      .addEdge( 'r, 'z )
-    println( diff.print )
-  }
-
 }

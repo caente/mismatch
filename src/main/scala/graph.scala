@@ -109,7 +109,7 @@ sealed abstract case class AdjacentGraph[Label: Eq: Ordering](
           case ( GraphVisitation( acc, visited ), adj ) if visited.contains( adj :: from ) =>
             GraphVisitation( acc, visited )
           case ( GraphVisitation( Printed( col, string ), visited ), adj ) =>
-            val adjString = s" -> ${adj.show} "
+            val adjString = s" -> ${adj.show}"
             traverse(
               adj :: from,
               GraphVisitation[Id, NonEmptyList[Label], Printed](

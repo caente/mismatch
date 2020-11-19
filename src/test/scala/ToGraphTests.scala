@@ -10,21 +10,9 @@ import algorithm._
 import tograph._
 import cats.implicits._
 import cats.data.NonEmptyList
+import utils.NodeNames._
 
 class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolInstances {
-  val f: Labelled.AsString = Node( 'Foo )
-  val a: Labelled.AsString = Node( 'a )
-  val b: Labelled.AsString = Node( 'b )
-  val c: Labelled.AsString = Node( 'c )
-  val d: Labelled.AsString = Node( 'd )
-  val h: Labelled.AsString = Node( 'h )
-  val g: Labelled.AsString = Node( 'g )
-  val k: Labelled.AsString = Node( 'k )
-  val e: Labelled.AsString = Node( 'e )
-  val i: Labelled.AsString = Node( 'i )
-  val l: Labelled.AsString = Node( 'l )
-  val j: Labelled.AsString = Node( 'j )
-
   test( "manual vs generic" ) {
     val manual =
       AdjacentGraph
@@ -122,7 +110,6 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
         Diff.removed( Leaf( 'k, "1" ) )
       )
       .connect( NonEmptyList.of( Diff.removed( b ), Diff.same( f ) ), Diff.removed( Leaf( 'h, "1" ) ) )
-    println( Mismatches.onlyMismatches( compared ).print )
     assert( GraphOps.nodes( compared ).toSet == GraphOps.nodes( expected ).toSet )
   }
   test( "generate option/None" ) {
