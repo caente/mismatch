@@ -102,10 +102,11 @@ class MismatchesTests extends AnyFunSuite with TypeCheckedTripleEquals with Matc
       .addEdge( 'a, 'd )
       .addEdge( 'c, 'x )
       .addEdge( 'c, 'i )
-    //.addEdge( 'Foo, 'b )
-    //.addEdge( 'b, 'h )
-    //.addEdge( 'b, 'g )
-    //.addEdge( 'g, 'x )
+      .addEdge( 'Foo, 'b )
+      .addEdge( 'b, 'h )
+      .addEdge( 'b, 'g )
+      .addEdge( 'g, 'r )
+      .addEdge( 'r, 'z )
     println( diff.print )
   }
 
