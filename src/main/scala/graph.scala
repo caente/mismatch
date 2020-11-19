@@ -104,11 +104,8 @@ sealed abstract case class AdjacentGraph[Label: Eq: Ordering](
       ): GraphVisitation[Id, NonEmptyList[Label], Printed] = {
       val extraCols = "." * visitation.result.col
       val newLines = s"\n$extraCols|"
-      val next = visitation.result.string :+ newLines
-      val visitationNL =
-        GraphVisitation[Id, NonEmptyList[Label], Printed]( Printed( visitation.result.col, next ), visitation.visited )
       val branch =
-        adjacentsPath( from ).foldLeft( visitationNL ) {
+        adjacentsPath( from ).foldLeft( visitation ) {
           case ( GraphVisitation( acc, visited ), adj ) if visited.contains( adj :: from ) =>
             GraphVisitation( acc, visited )
           case ( GraphVisitation( Printed( col, string ), visited ), adj ) =>
@@ -116,7 +113,7 @@ sealed abstract case class AdjacentGraph[Label: Eq: Ordering](
             traverse(
               adj :: from,
               GraphVisitation[Id, NonEmptyList[Label], Printed](
-                Printed( col + adjString.length, string :+ adjString ),
+                Printed( col + adjString.length, string :+ newLines :+ adjString ),
                 visited + (adj :: from)
               )
             )
@@ -127,8 +124,8 @@ sealed abstract case class AdjacentGraph[Label: Eq: Ordering](
     }
     traverse(
       NonEmptyList.one( root ),
-      GraphVisitation[Id, NonEmptyList[Label], Printed]( Printed( 0, List(root.show) ), Set() )
-    ).result.string.dropRight(1).reduce(_ + _)
+      GraphVisitation[Id, NonEmptyList[Label], Printed]( Printed( 0, List( root.show ) ), Set() )
+    ).result.string.reduce( _ + _ )
   }
 }
 
