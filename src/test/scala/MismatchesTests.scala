@@ -92,7 +92,7 @@ class MismatchesTests extends AnyFunSuite with TypeCheckedTripleEquals with Matc
       .addEdge( Diff.same( 'a ), Diff.removed( 'i ) )
       .addEdge( Diff.same( 'a ), Diff.added( 'c ) )
       .addEdge( Diff.same( 'b ), Diff.removed( 'i ) )
-    pprint.pprintln(diffsOnly)
+    println(diffsOnly.print)
     assert( diffsOnly === expected )
   }
   test( "print graph" ) {

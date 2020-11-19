@@ -33,7 +33,7 @@ object Diff {
     def show(t: Diff[A] ): String = t match {
       case Added( a )   => s"Added(${a.show})"
       case Removed( a ) => s"Removed(${a.show})"
-      case Same( a )    => s"Same(${a.show})"
+      case Same( a )    => s"${a.show}"
     }
   }
 }
