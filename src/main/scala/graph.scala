@@ -76,6 +76,7 @@ object AdjacentGraph {
     }
 }
 
+case class Printed(col: Int, string: List[String] )
 sealed abstract case class AdjacentGraph[Label: Eq: Ordering](
     root: Label,
     val data: Map[NonEmptyList[Label], SortedSet[Label]]) {
@@ -95,6 +96,39 @@ sealed abstract case class AdjacentGraph[Label: Eq: Ordering](
       }
     } else
       throw new IllegalArgumentException( s"At least one node must exist; start:$start end:$end" )
+  }
+  def print(implicit S: Show[Label] ): String = {
+    def traverse(
+        from: NonEmptyList[Label],
+        visitation: GraphVisitation[Id, NonEmptyList[Label], Printed]
+      ): GraphVisitation[Id, NonEmptyList[Label], Printed] = {
+      val extraCols = "." * visitation.result.col
+      val newLines = s"\n$extraCols|"
+      val next = visitation.result.string :+ newLines
+      val visitationNL =
+        GraphVisitation[Id, NonEmptyList[Label], Printed]( Printed( visitation.result.col, next ), visitation.visited )
+      val branch =
+        adjacentsPath( from ).foldLeft( visitationNL ) {
+          case ( GraphVisitation( acc, visited ), adj ) if visited.contains( adj :: from ) =>
+            GraphVisitation( acc, visited )
+          case ( GraphVisitation( Printed( col, string ), visited ), adj ) =>
+            val adjString = s" -> ${adj.show} "
+            traverse(
+              adj :: from,
+              GraphVisitation[Id, NonEmptyList[Label], Printed](
+                Printed( col + adjString.length, string :+ adjString ),
+                visited + (adj :: from)
+              )
+            )
+        }
+      branch.copy[Id, NonEmptyList[Label], Printed](
+        result = branch.result.copy( col = 0 )
+      )
+    }
+    traverse(
+      NonEmptyList.one( root ),
+      GraphVisitation[Id, NonEmptyList[Label], Printed]( Printed( 0, List(root.show) ), Set() )
+    ).result.string.dropRight(1).reduce(_ + _)
   }
 }
 
