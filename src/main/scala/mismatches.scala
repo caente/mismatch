@@ -30,8 +30,8 @@ object Diff {
     def compare(x: Diff[A], y: Diff[A] ): Int = A.compare( x.value, y.value )
   }
   private def color(s: String )(msg: String ) = s + msg + Console.RESET
-  private val red = color( Console.RED ) _
-  private val green = color( Console.GREEN ) _
+  val red = color( Console.RED ) _
+  val green = color( Console.GREEN ) _
   implicit def show[A: Show]: Show[Diff[A]] = new Show[Diff[A]] {
     def show(t: Diff[A] ): String = t match {
       case Added( a )   => green( a.show )

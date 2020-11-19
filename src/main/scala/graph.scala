@@ -4,6 +4,9 @@ import cats._
 import cats.implicits._
 import scala.collection.immutable.SortedSet
 import cats.data.NonEmptyList
+import algorithm.Diff
+import simulacrum._
+import tograph.Labelled
 
 object AdjacentGraph {
   def single[Label: Eq: Ordering](node: Label ): AdjacentGraph[Label] =
@@ -76,6 +79,30 @@ object AdjacentGraph {
     }
 }
 
+@typeclass
+trait Representation[Label] {
+  def representation(label: Label ): String
+  def length(label: Label ): Int
+}
+object Representation {
+  implicit def diff[Label: Show] = new Representation[Diff[Label]] {
+    def representation(label: Diff[Label] ): String = label.show
+
+    def length(label: Diff[Label] ): Int = label.value.show.length
+  }
+  implicit def symbol = new Representation[Symbol] {
+    def representation(label: Symbol ): String = label.toString
+
+    def length(label: Symbol ): Int = representation( label ).length
+  }
+  implicit def labelled[Label: Show] = new Representation[Labelled[Label]] {
+    def representation(label: Labelled[Label] ): String = label.show
+
+    def length(label: Labelled[Label] ): Int = label.show.length
+
+  }
+}
+import Representation.ops._
 case class Printed(col: Int, string: List[String] )
 sealed abstract case class AdjacentGraph[Label: Eq: Ordering](
     root: Label,
@@ -97,23 +124,24 @@ sealed abstract case class AdjacentGraph[Label: Eq: Ordering](
     } else
       throw new IllegalArgumentException( s"At least one node must exist; start:$start end:$end" )
   }
-  def print(implicit S: Show[Label] ): String = {
+  def print(implicit S: Representation[Label] ): String = {
     def traverse(
         from: NonEmptyList[Label],
         visitation: GraphVisitation[Id, NonEmptyList[Label], Printed]
       ): GraphVisitation[Id, NonEmptyList[Label], Printed] = {
-      val extraCols = "." * visitation.result.col
+      val extraCols = " " * visitation.result.col
       val newLines = s"\n$extraCols|"
       val branch =
         adjacentsPath( from ).foldLeft( visitation ) {
           case ( GraphVisitation( acc, visited ), adj ) if visited.contains( adj :: from ) =>
             GraphVisitation( acc, visited )
           case ( GraphVisitation( Printed( col, string ), visited ), adj ) =>
-            val adjString = s" -> ${adj.show}"
+            val arrow = " -> "
+            val adjString = arrow + adj.representation
             traverse(
               adj :: from,
               GraphVisitation[Id, NonEmptyList[Label], Printed](
-                Printed( col + adjString.length, string :+ newLines :+ adjString ),
+                Printed( col + adj.length + arrow.length, string :+ newLines :+ adjString ),
                 visited + (adj :: from)
               )
             )
@@ -124,7 +152,7 @@ sealed abstract case class AdjacentGraph[Label: Eq: Ordering](
     }
     traverse(
       NonEmptyList.one( root ),
-      GraphVisitation[Id, NonEmptyList[Label], Printed]( Printed( 0, List( root.show ) ), Set() )
+      GraphVisitation[Id, NonEmptyList[Label], Printed]( Printed( 0, List( root.representation ) ), Set() )
     ).result.string.reduce( _ + _ )
   }
 }
