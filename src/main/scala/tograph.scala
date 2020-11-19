@@ -9,31 +9,36 @@ import cats.data.NonEmptyList
 import cats.Show
 import cats.kernel.Eq
 
-sealed trait Labelled[A] {
-  def label: Symbol
-}
+sealed trait Labelled[A]
 object Labelled {
   implicit def eq[A: Eq] = new Eq[Labelled[A]] {
     def eqv(x: Labelled[A], y: Labelled[A] ): Boolean =
       ( x, y ) match {
-        case ( Leaf( labelX, x ), Leaf( labelY, y ) ) => (labelX === labelY) && (x === y)
-        case ( Node( x ), Node( y ) )                 => x === y
-        case _                                        => false
+        case ( Leaf( x ), Leaf( y ) ) => x === y
+        case ( Node( x ), Node( y ) ) => x === y
+        case _                        => false
       }
   }
-  implicit def ord[A]: Ordering[Labelled[A]] = new Ordering[Labelled[A]] {
-    def compare(x: Labelled[A], y: Labelled[A] ): Int = x.label.compare( y.label )
+  implicit def ord[A: Ordering]: Ordering[Labelled[A]] = new Ordering[Labelled[A]] {
+    def compare(x: Labelled[A], y: Labelled[A] ): Int = {
+      ( x, y ) match {
+        case ( Leaf( _ ), Node( _ ) ) => -1
+        case ( Node( _ ), Leaf( _ ) ) => 1
+        case ( Leaf( x ), Leaf( y ) ) => Ordering[A].compare( x, y )
+        case ( Node( x ), Node( y ) ) => x.compare( y )
+      }
+    }
   }
   type AsString = Labelled[String]
-  implicit def show[A:Show]:Show[Labelled[A]] = new Show[Labelled[A]]{
-    def show(t: Labelled[A]): String = t match {
-      case Leaf(label, x) => label.toString + " -> " + x.show
-      case Node(label) => label.toString
+  implicit def show[A: Show]: Show[Labelled[A]] = new Show[Labelled[A]] {
+    def show(t: Labelled[A] ): String = t match {
+      case Leaf( x )     => x.show
+      case Node( label ) => label.toString
     }
   }
 }
 case class Node[A](label: Symbol ) extends Labelled[A]
-case class Leaf[A](label: Symbol, a: A ) extends Labelled[A]
+case class Leaf[A](a: A ) extends Labelled[A]
 
 trait ToGraph[C, G[_], Label] {
   def toGraph(parent: NonEmptyList[Label], c: C ): G[Label] => G[Label]
@@ -50,8 +55,10 @@ trait Bottom {
         parent: NonEmptyList[Labelled.AsString],
         c: FieldType[K, H] :: T
       ): G[Labelled.AsString] => G[Labelled.AsString] = { graph =>
-      val graphWithLabel = A.connect( graph )( parent, Leaf( key.value, Show[H].show( c.head ) ) )
-      N.toGraph( parent, c.tail )( graphWithLabel )
+      val label: Labelled.AsString = Node( key.value )
+      val graphWithLabel = A.connect( graph )( parent, label )
+      val graphWithLeaf = A.connect( graphWithLabel )( label :: parent, Leaf( Show[H].show( c.head ) ) )
+      N.toGraph( parent, c.tail )( graphWithLeaf )
     }
   }
 }

@@ -125,6 +125,7 @@ sealed abstract case class AdjacentGraph[Label: Eq: Ordering](
       throw new IllegalArgumentException( s"At least one node must exist; start:$start end:$end" )
   }
   def print(implicit S: Representation[Label] ): String = {
+    val arrow = " -> "
     def traverse(
         from: NonEmptyList[Label],
         visitation: GraphVisitation[Id, NonEmptyList[Label], Printed]
@@ -136,7 +137,6 @@ sealed abstract case class AdjacentGraph[Label: Eq: Ordering](
           case ( GraphVisitation( acc, visited ), adj ) if visited.contains( adj :: from ) =>
             GraphVisitation( acc, visited )
           case ( GraphVisitation( Printed( col, string ), visited ), adj ) =>
-            val arrow = " -> "
             val adjString = arrow + adj.representation
             traverse(
               adj :: from,

@@ -21,11 +21,15 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
         .connect( NonEmptyList.one( f ), a )
         .connect( NonEmptyList.of( a, f ), c )
         .connect( NonEmptyList.of( a, f ), c )
-        .connect( NonEmptyList.of( a, f ), Leaf( 'd, "1" ) )
-        .connect( NonEmptyList.of( b, f ), Leaf( 'h, "1" ) )
+        .connect( NonEmptyList.of( a, f ), d )
+        .connect( NonEmptyList.of( d, a, f ), Leaf( "1" ) )
+        .connect( NonEmptyList.of( b, f ), h )
+        .connect( NonEmptyList.of( h, b, f ), Leaf( "1" ) )
         .connect( NonEmptyList.of( b, f ), g )
-        .connect( NonEmptyList.of( g, b, f ), Leaf( 'k, "1" ) )
-        .connect( NonEmptyList.of( c, a, f ), Leaf( 'e, "1" ) )
+        .connect( NonEmptyList.of( g, b, f ), k )
+        .connect( NonEmptyList.of( k, g, b, f ), Leaf( "1" ) )
+        .connect( NonEmptyList.of( c, a, f ), e )
+        .connect( NonEmptyList.of( e, c, a, f ), Leaf( "1" ) )
 
     case class C(e: Int )
     case class A(c: C, d: Int )
@@ -96,20 +100,39 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
       .connect( NonEmptyList.one( Diff.same( f ) ), Diff.same( a ) )
       .connect( NonEmptyList.one( Diff.same( f ) ), Diff.added( l ) )
       .connect( NonEmptyList.of( Diff.added( l ), Diff.same( f ) ), Diff.added( g ) )
-      .connect( NonEmptyList.of( Diff.added( g ), Diff.added( l ), Diff.same( f ) ), Diff.added( Leaf( 'k, "1" ) ) )
-      .connect( NonEmptyList.of( Diff.added( l ), Diff.same( f ) ), Diff.added( Leaf( 'h, "1" ) ) )
-      .connect( NonEmptyList.of( Diff.same( a ), Diff.same( f ) ), Diff.removed( Leaf( 'd, "1" ) ) )
-      .connect( NonEmptyList.of( Diff.same( a ), Diff.same( f ) ), Diff.added( Leaf( 'd, "2" ) ) )
+      .connect( NonEmptyList.of( Diff.added( g ), Diff.added( l ), Diff.same( f ) ), Diff.added( k ) )
+      .connect(
+        NonEmptyList.of( Diff.added( k ), Diff.added( g ), Diff.added( l ), Diff.same( f ) ),
+        Diff.added( Leaf( "1" ) )
+      )
+      .connect( NonEmptyList.of( Diff.added( l ), Diff.same( f ) ), Diff.added( h ) )
+      .connect( NonEmptyList.of( Diff.added( h ), Diff.added( l ), Diff.same( f ) ), Diff.added( Leaf( "1" ) ) )
+      .connect( NonEmptyList.of( Diff.same( a ), Diff.same( f ) ), Diff.same( d ) )
+      .connect( NonEmptyList.of( Diff.same( d ), Diff.same( a ), Diff.same( f ) ), Diff.removed( Leaf( "1" ) ) )
+      .connect( NonEmptyList.of( Diff.same( d ), Diff.same( a ), Diff.same( f ) ), Diff.added( Leaf( "2" ) ) )
       .connect( NonEmptyList.of( Diff.same( a ), Diff.same( f ) ), Diff.same( c ) )
-      .connect( NonEmptyList.of( Diff.same( c ), Diff.same( a ), Diff.same( f ) ), Diff.removed( Leaf( 'e, "1" ) ) )
-      .connect( NonEmptyList.of( Diff.same( c ), Diff.same( a ), Diff.same( f ) ), Diff.added( Leaf( 'j, "1" ) ) )
+      .connect( NonEmptyList.of( Diff.same( c ), Diff.same( a ), Diff.same( f ) ), Diff.removed( e ) )
+      .connect(
+        NonEmptyList.of( Diff.removed( e ), Diff.same( c ), Diff.same( a ), Diff.same( f ) ),
+        Diff.removed( Leaf( "1" ) )
+      )
+      .connect( NonEmptyList.of( Diff.same( c ), Diff.same( a ), Diff.same( f ) ), Diff.added( j ) )
+      .connect(
+        NonEmptyList.of( Diff.added( j ), Diff.same( c ), Diff.same( a ), Diff.same( f ) ),
+        Diff.added( Leaf( "1" ) )
+      )
       .connect( NonEmptyList.one( Diff.same( f ) ), Diff.removed( b ) )
       .connect( NonEmptyList.of( Diff.removed( b ), Diff.same( f ) ), Diff.removed( g ) )
       .connect(
         NonEmptyList.of( Diff.removed( g ), Diff.removed( b ), Diff.same( f ) ),
-        Diff.removed( Leaf( 'k, "1" ) )
+        Diff.removed( k )
       )
-      .connect( NonEmptyList.of( Diff.removed( b ), Diff.same( f ) ), Diff.removed( Leaf( 'h, "1" ) ) )
+      .connect(
+        NonEmptyList.of( Diff.removed( k ), Diff.removed( g ), Diff.removed( b ), Diff.same( f ) ),
+        Diff.removed( Leaf( "1" ) )
+      )
+      .connect( NonEmptyList.of( Diff.removed( b ), Diff.same( f ) ), Diff.removed( h ) )
+      .connect( NonEmptyList.of( Diff.removed( h ), Diff.removed( b ), Diff.same( f ) ), Diff.removed( Leaf( "1" ) ) )
     assert( GraphOps.nodes( compared ).toSet == GraphOps.nodes( expected ).toSet )
   }
   test( "generate option/None" ) {
@@ -122,7 +145,8 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
       .single( f )
       .connect( NonEmptyList.one( f ), a )
       .connect( NonEmptyList.one( f ), b )
-      .connect( NonEmptyList.of( a, f ), Leaf( 'i, "1" ) )
+      .connect( NonEmptyList.of( a, f ), i )
+      .connect( NonEmptyList.of( i, a, f ), Leaf( "1" ) )
     assert( generated === expected )
   }
   test( "generate option/Some" ) {
@@ -135,8 +159,10 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
       .single( f )
       .connect( NonEmptyList.one( f ), a )
       .connect( NonEmptyList.one( f ), b )
-      .connect( NonEmptyList.of( a, f ), Leaf( 'i, "1" ) )
-      .connect( NonEmptyList.of( b, f ), Leaf( 'i, "1" ) )
+      .connect( NonEmptyList.of( a, f ), i )
+      .connect( NonEmptyList.of( i, a, f ), Leaf( "1" ) )
+      .connect( NonEmptyList.of( b, f ), i )
+      .connect( NonEmptyList.of( i, b, f ), Leaf( "1" ) )
     assert( generated === expected )
   }
   test( "generate sealed trait" ) {
@@ -150,8 +176,10 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
       .single( f )
       .connect( NonEmptyList.one( f ), a )
       .connect( NonEmptyList.one( f ), b )
-      .connect( NonEmptyList.of( a, f ), Leaf( 'i, "1" ) )
-      .connect( NonEmptyList.of( b, f ), Leaf( 'i, "1" ) )
+      .connect( NonEmptyList.of( a, f ), i )
+      .connect( NonEmptyList.of( i, a, f ), Leaf( "1" ) )
+      .connect( NonEmptyList.of( b, f ), i )
+      .connect( NonEmptyList.of( i, b, f ), Leaf( "1" ) )
     assert( generated === expected )
   }
   test( "same name in two branches" ) {
@@ -172,9 +200,11 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
       .connect( NonEmptyList.one( f ), a )
       .connect( NonEmptyList.one( f ), b )
       .connect( NonEmptyList.of( a, f ), b )
-      .connect( NonEmptyList.of( b, a, f ), Leaf( 'i, "1" ) )
+      .connect( NonEmptyList.of( b, a, f ), i )
+      .connect( NonEmptyList.of( i, b, a, f ), Leaf( "1" ) )
       .connect( NonEmptyList.of( b, f ), b )
-      .connect( NonEmptyList.of( b, b, f ), Leaf( 'i, "2" ) )
+      .connect( NonEmptyList.of( b, b, f ), i )
+      .connect( NonEmptyList.of( i, b, b, f ), Leaf( "2" ) )
     assert(
       generated === expected,
       s"""
