@@ -39,29 +39,27 @@ class PrintGraph extends AnyFunSuite with TypeCheckedTripleEquals with SymbolIns
                   | -> 'z
       | -> 'h"""
     val result = g.print
-    //assert( result === expected )
-    println( result )
+    assert( result === expected )
   }
   test( "print path graph with leafs at the end" ) {
     val gr = AdjacentGraph
       .single( f )
       .connect( NonEmptyList.one( f ), a )
       .connect( NonEmptyList.of( a, f ), d )
-      .connect( NonEmptyList.of( d, a, f ), Leaf( "1" ) )
+      .connect( NonEmptyList.of( d, a, f ), k )
       .connect( NonEmptyList.of( a, f ), c )
       .connect( NonEmptyList.of( c, a, f ), j )
-      .connect( NonEmptyList.of( j, c, a, f ), Leaf( "1" ) )
+      .connect( NonEmptyList.of( j, c, a, f ), x )
     val expected = """'Foo
 | -> 'a
       | -> 'c
             | -> 'j
-                  | -> 1
+                  | -> 'x
       | -> 'd
-            | -> 1"""
+            | -> 'k"""
 
     val result = gr.print
-    //assert( result === expected )
-    println( result )
+    assert( result === expected )
   }
   test( "print diff graph" ) {
     val diff = AdjacentGraph
@@ -105,19 +103,26 @@ class PrintGraph extends AnyFunSuite with TypeCheckedTripleEquals with SymbolIns
     val expected = s"""'Foo
 | -> 'a
       | -> 'c
-            | -> ${Diff.red( "'e -> 1" )}
-            | -> ${Diff.green( "'j -> 1" )}
-      | -> ${Diff.red( "'d -> 1" )}
+            | -> ${Diff.red( "'e" )}
+                  | -> ${Diff.red( "1" )}
+            | -> ${Diff.green( "'j" )}
+                  | -> ${Diff.green( "1" )}
+      | -> 'd
+            | -> ${Diff.red( "1" )}
+            | -> ${Diff.green( "2" )}
 | -> ${Diff.red( "'b" )}
       | -> ${Diff.red( "'g" )}
-            | -> ${Diff.red( "'k -> 1" )}
-      | -> ${Diff.red( "'h -> 1" )}
+            | -> ${Diff.red( "'k" )}
+                  | -> ${Diff.red( "1" )}
+      | -> ${Diff.red( "'h" )}
+            | -> ${Diff.red( "1" )}
 | -> ${Diff.green( "'l" )}
       | -> ${Diff.green( "'g" )}
-            | -> ${Diff.green( "'k -> 1" )}
-      | -> ${Diff.green( "'h -> 1" )}"""
+            | -> ${Diff.green( "'k" )}
+                  | -> ${Diff.green( "1" )}
+      | -> ${Diff.green( "'h" )}
+            | -> ${Diff.green( "1" )}"""
     val result = diff.print
-    println( result )
-    //assert( result === expected )
+    assert( result === expected )
   }
 }

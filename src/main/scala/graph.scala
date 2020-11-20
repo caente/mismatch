@@ -132,12 +132,12 @@ sealed abstract case class AdjacentGraph[Label: Eq: Ordering](
       ): GraphVisitation[Id, NonEmptyList[Label], Printed] = {
       val extraCols = " " * visitation.result.col
       val newLines = s"\n$extraCols|"
-      val branch =
-        adjacentsPath( from ).foldLeft( visitation ) {
-          case ( GraphVisitation( acc, visited ), adj ) if visited.contains( adj :: from ) =>
-            GraphVisitation( acc, visited )
-          case ( GraphVisitation( Printed( col, string ), visited ), adj ) =>
-            val adjString = arrow + adj.representation
+      adjacentsPath( from ).foldLeft( visitation ) {
+        case ( GraphVisitation( acc, visited ), adj ) if visited.contains( adj :: from ) =>
+          GraphVisitation( acc, visited )
+        case ( GraphVisitation( Printed( col, string ), visited ), adj ) =>
+          val adjString = arrow + adj.representation
+          val branch =
             traverse(
               adj :: from,
               GraphVisitation[Id, NonEmptyList[Label], Printed](
@@ -145,10 +145,10 @@ sealed abstract case class AdjacentGraph[Label: Eq: Ordering](
                 visited + (adj :: from)
               )
             )
-        }
-      branch.copy[Id, NonEmptyList[Label], Printed](
-        result = branch.result.copy( col = 0 )
-      )
+          branch.copy[Id, NonEmptyList[Label], Printed](
+            result = branch.result.copy( col = col )
+          )
+      }
     }
     traverse(
       NonEmptyList.one( root ),
