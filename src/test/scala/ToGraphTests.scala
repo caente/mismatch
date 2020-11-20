@@ -54,11 +54,13 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
     assert( generated === manual )
   }
   test( "compare two different classes" ) {
+    case class Z(i: Int )
+    case class J(z: Z )
     case class C_Left(e: Int )
     case class A_Left(c: C_Left, d: Int )
     case class G_Left(k: Int )
     case class B_Left(h: Int, g: G_Left )
-    case class Foo_Left(a: A_Left, b: B_Left )
+    case class Foo_Left(a: A_Left, b: B_Left, j: J )
     val foo_Left = Foo_Left(
       a = A_Left(
         c = C_Left(
@@ -71,13 +73,14 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
         g = G_Left(
           k = 1
         )
-      )
+      ),
+      j = J( Z( 1 ) )
     )
     case class C_Right(j: Int )
     case class A_Right(c: C_Right, d: Int )
     case class G_Right(k: Int )
     case class L_Right(h: Int, g: G_Right )
-    case class Foo_Right(a: A_Right, l: L_Right )
+    case class Foo_Right(a: A_Right, l: L_Right, j: J )
     val foo_Right = Foo_Right(
       a = A_Right(
         c = C_Right(
@@ -90,14 +93,19 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
         g = G_Right(
           k = 1
         )
-      )
+      ),
+      j = J( Z( 1 ) )
     )
     val generated_Left = ToGraph.create[Foo_Left, AdjacentGraph]( 'Foo, foo_Left )
     val generated_Right = ToGraph.create[Foo_Right, AdjacentGraph]( 'Foo, foo_Right )
     val compared = Mismatches.compare( generated_Left, generated_Right, Node[String]( '- ) )
     val expected = AdjacentGraph
       .single( Diff.same( f ) )
+      .connect( NonEmptyList.one( Diff.same( f ) ), Diff.same( j ) )
       .connect( NonEmptyList.one( Diff.same( f ) ), Diff.same( a ) )
+      .connect( NonEmptyList.of( Diff.same( j ), Diff.same( f ) ), Diff.same( z ) )
+      .connect( NonEmptyList.of( Diff.same( z ), Diff.same( j ), Diff.same( f ) ), Diff.same( i ) )
+      .connect( NonEmptyList.of( Diff.same(i), Diff.same( z ), Diff.same( j ), Diff.same( f ) ), Diff.same( Leaf( "1" ) ) )
       .connect( NonEmptyList.one( Diff.same( f ) ), Diff.added( l ) )
       .connect( NonEmptyList.of( Diff.added( l ), Diff.same( f ) ), Diff.added( g ) )
       .connect( NonEmptyList.of( Diff.added( g ), Diff.added( l ), Diff.same( f ) ), Diff.added( k ) )
@@ -133,6 +141,9 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
       )
       .connect( NonEmptyList.of( Diff.removed( b ), Diff.same( f ) ), Diff.removed( h ) )
       .connect( NonEmptyList.of( Diff.removed( h ), Diff.removed( b ), Diff.same( f ) ), Diff.removed( Leaf( "1" ) ) )
+    println( compared.print )
+    println( "-" * 30 )
+    println( Mismatches.onlyMismatches( compared ).print )
     assert( GraphOps.nodes( compared ).toSet == GraphOps.nodes( expected ).toSet )
   }
   test( "generate option/None" ) {

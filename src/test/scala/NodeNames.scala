@@ -16,4 +16,5 @@ object NodeNames {
   val j: Labelled.AsString = Node( 'j )
   val x: Labelled.AsString = Node( 'x )
   val y: Labelled.AsString = Node( 'y )
+  val z: Labelled.AsString = Node( 'z )
 }
