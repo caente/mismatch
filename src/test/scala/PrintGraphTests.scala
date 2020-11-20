@@ -12,7 +12,7 @@ import cats.data.NonEmptyList
 import utils.NodeNames._
 import cats.instances.string._
 
-class PrintGraph extends AnyFunSuite with TypeCheckedTripleEquals with SymbolInstances {
+class PrintGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolInstances {
   test( "print graph" ) {
     val g = AdjacentGraph
       .single( 'Foo )
