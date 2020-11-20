@@ -125,21 +125,4 @@ object Mismatches {
       )
       .result
   }
-  def stringGraph[G[_], Label: Eq: Ordering: Show](
-      diff: G[Diff[Label]]
-    )(implicit
-      DFS: DFS[G],
-      R: Root[G],
-      C: CreateGraph[G],
-      A: Connect[G]
-    ): String = {
-    val rootString: String = R.root( diff ).show
-    DFS
-      .dfs[Id, Diff[Label], String]( diff )( NonEmptyList.one( R.root( diff ) ), rootString, Set() )(
-        combine = ( parent, child, string ) => {
-          s"$string -> ${child.show}"
-        }
-      )
-      .result
-  }
 }
