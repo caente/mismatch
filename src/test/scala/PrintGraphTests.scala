@@ -28,16 +28,16 @@ class PrintGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with Symb
       .addEdge( 'r, 'z )
     val expected =
       """'Foo
-| -> 'a
-      | -> 'c
-            | -> 'i
-            | -> 'x
-      | -> 'd
-| -> 'b
-      | -> 'g
-            | -> 'r
-                  | -> 'z
-      | -> 'h"""
+|-->'a
+     |-->'c
+          |-->'i
+          |-->'x
+     |-->'d
+|-->'b
+     |-->'g
+          |-->'r
+               |-->'z
+     |-->'h"""
     val result = g.print
     assert( result === expected )
   }
@@ -51,12 +51,12 @@ class PrintGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with Symb
       .connect( NonEmptyList.of( c, a, f ), j )
       .connect( NonEmptyList.of( j, c, a, f ), x )
     val expected = """'Foo
-| -> 'a
-      | -> 'c
-            | -> 'j
-                  | -> 'x
-      | -> 'd
-            | -> 'k"""
+|-->'a
+     |-->'c
+          |-->'j
+               |-->'x
+     |-->'d
+          |-->'k"""
 
     val result = gr.print
     assert( result === expected )
@@ -101,27 +101,27 @@ class PrintGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with Symb
       .connect( NonEmptyList.of( Diff.removed( b ), Diff.same( f ) ), Diff.removed( h ) )
       .connect( NonEmptyList.of( Diff.removed( h ), Diff.removed( b ), Diff.same( f ) ), Diff.removed( Leaf( "1" ) ) )
     val expected = s"""'Foo
-| -> 'a
-      | -> 'c
-            | -> ${Diff.red( "'e" )}
-                  | -> ${Diff.red( "1" )}
-            | -> ${Diff.green( "'j" )}
-                  | -> ${Diff.green( "1" )}
-      | -> 'd
-            | -> ${Diff.red( "1" )}
-            | -> ${Diff.green( "2" )}
-| -> ${Diff.red( "'b" )}
-      | -> ${Diff.red( "'g" )}
-            | -> ${Diff.red( "'k" )}
-                  | -> ${Diff.red( "1" )}
-      | -> ${Diff.red( "'h" )}
-            | -> ${Diff.red( "1" )}
-| -> ${Diff.green( "'l" )}
-      | -> ${Diff.green( "'g" )}
-            | -> ${Diff.green( "'k" )}
-                  | -> ${Diff.green( "1" )}
-      | -> ${Diff.green( "'h" )}
-            | -> ${Diff.green( "1" )}"""
+|-->'a
+     |-->'c
+          |-->${Diff.red( "'e" )}
+               |-->${Diff.red( "1" )}
+          |-->${Diff.green( "'j" )}
+               |-->${Diff.green( "1" )}
+     |-->'d
+          |-->${Diff.red( "1" )}
+          |-->${Diff.green( "2" )}
+|-->${Diff.red( "'b" )}
+     |-->${Diff.red( "'g" )}
+          |-->${Diff.red( "'k" )}
+               |-->${Diff.red( "1" )}
+     |-->${Diff.red( "'h" )}
+          |-->${Diff.red( "1" )}
+|-->${Diff.green( "'l" )}
+     |-->${Diff.green( "'g" )}
+          |-->${Diff.green( "'k" )}
+               |-->${Diff.green( "1" )}
+     |-->${Diff.green( "'h" )}
+          |-->${Diff.green( "1" )}"""
     val result = diff.print
     assert( result === expected )
   }
