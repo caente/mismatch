@@ -141,9 +141,6 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
       )
       .connect( NonEmptyList.of( Diff.removed( b ), Diff.same( f ) ), Diff.removed( h ) )
       .connect( NonEmptyList.of( Diff.removed( h ), Diff.removed( b ), Diff.same( f ) ), Diff.removed( Leaf( "1" ) ) )
-    println( compared.print )
-    println( "-" * 30 )
-    println( Mismatches.onlyMismatches( compared ).print )
     assert( GraphOps.nodes( compared ).toSet == GraphOps.nodes( expected ).toSet )
   }
   test( "generate option/None" ) {
