@@ -8,6 +8,9 @@ import algorithm.Diff
 import simulacrum._
 import tograph.Labelled
 import tograph.Index
+import algorithm.Same
+import algorithm.Added
+import algorithm.Removed
 
 object AdjacentGraph {
   def single[Label: Eq: Ordering](node: Label ): AdjacentGraph[Label] =
@@ -133,15 +136,15 @@ sealed abstract case class AdjacentGraph[Label: Eq: Ordering](
       ): GraphVisitation[Id, NonEmptyList[Label], Printed] = {
       val extraCols = " " * visitation.result.col
       val newLines = from.head match {
-        case Index( _ ) => ""
-        case _          => s"\n$extraCols|"
+        case Index( _ ) | Same( Index( _ ) ) | Added( Index( _ ) ) | Removed( Index( _ ) ) => ""
+        case _                                                                             => s"\n$extraCols|"
       }
       adjacentsPath( from ).foldLeft( visitation ) {
         case ( GraphVisitation( acc, visited ), adj ) if visited.contains( adj :: from ) =>
           GraphVisitation( acc, visited )
         case ( GraphVisitation( Printed( col, string ), visited ), adj ) =>
           val ( adjString, length ) = from.head match {
-            case Index( _ ) =>
+            case Index( _ ) | Same( Index( _ ) ) | Added( Index( _ ) ) | Removed( Index( _ ) ) =>
               ( ":" + adj.representation, 1 + adj.length )
             case _ =>
               ( arrow + adj.representation, adj.length + arrow.length )
@@ -323,7 +326,13 @@ object GraphOps {
       g: G[Label]
     )(f: NonEmptyList[Label] => Boolean
     )(implicit G: BFS[G],
-      R: Root[G]
+      R: Root[G],
+      S: Representation[Label]
     ): NonEmptyList[Label] =
-    findPath( g )( f ).result.getOrElse( throw new RuntimeException( "Label not found" ) )
+    findPath( g )( f ).result
+      .getOrElse(
+        throw new RuntimeException(
+          s"Label not found"
+        )
+      )
 }

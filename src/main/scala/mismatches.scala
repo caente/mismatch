@@ -51,7 +51,9 @@ object Mismatches {
       R: Root[G],
       C: CreateGraph[G],
       E: Connect[G],
-      O: Ordering[Label]
+      O: Ordering[Label],
+      D: Representation[Diff[Label]],
+      S: Representation[Label]
     ): G[Diff[Label]] = {
     val alignments: List[Alignment[NonEmptyList[Label]]] =
       NeedlemanWunsch.findAlignments(

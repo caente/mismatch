@@ -19,5 +19,7 @@ object NodeNames {
   val y: Labelled.AsString = Node( 'y )
   val z: Labelled.AsString = Node( 'z )
   val s: Labelled.AsString = Node( 's )
+  val ls: Labelled.AsString = Node( 'ls )
+  val pl: Labelled.AsString = Node( '- )
   def index(i: Int ) = Index[String]( i )
 }

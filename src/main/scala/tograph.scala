@@ -14,9 +14,10 @@ object Labelled {
   implicit def eq[A: Eq] = new Eq[Labelled[A]] {
     def eqv(x: Labelled[A], y: Labelled[A] ): Boolean =
       ( x, y ) match {
-        case ( Leaf( x ), Leaf( y ) ) => x === y
-        case ( Node( x ), Node( y ) ) => x === y
-        case _                        => false
+        case ( Leaf( x ), Leaf( y ) )   => x === y
+        case ( Node( x ), Node( y ) )   => x === y
+        case ( Index( x ), Index( y ) ) => x === y
+        case _                          => false
       }
   }
   implicit def ord[A: Ordering]: Ordering[Labelled[A]] = new Ordering[Labelled[A]] {

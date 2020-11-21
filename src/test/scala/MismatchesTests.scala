@@ -10,8 +10,10 @@ import graph._
 import cats.implicits._
 import cats.Eq
 import algorithm.Mismatches.onlyMismatches
+import utils.NodeNames._
+import tograph._
 
-class MismatchesTests extends AnyFunSuite with TypeCheckedTripleEquals with Matchers with SymbolInstances {
+class MismatchesTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolInstances {
   test( "the first test" ) {
     val A = AdjacentGraph.single( 'Foo ).addEdge( 'Foo, 'a )
     val B = AdjacentGraph.single( 'Foo ).addEdge( 'Foo, 'a )
@@ -94,5 +96,59 @@ class MismatchesTests extends AnyFunSuite with TypeCheckedTripleEquals with Matc
       .addEdge( Diff.same( 'b ), Diff.removed( 'i ) )
 
     assert( diffsOnly === expected )
+  }
+  test( "comparing graphs with index" ) {
+    val A = AdjacentGraph
+      .single( f )
+      .connect( NonEmptyList.one( f ), ls )
+      .connect( NonEmptyList.of( ls, f ), index( 0 ) )
+      .connect( NonEmptyList.of( index( 0 ), ls, f ), b )
+      .connect( NonEmptyList.of( b, index( 0 ), ls, f ), i )
+      .connect( NonEmptyList.of( i, b, index( 0 ), ls, f ), Leaf( "1" ) )
+      .connect( NonEmptyList.of( ls, f ), index( 1 ) )
+      .connect( NonEmptyList.of( index( 1 ), ls, f ), b )
+      .connect( NonEmptyList.of( b, index( 1 ), ls, f ), s )
+      .connect( NonEmptyList.of( s, b, index( 1 ), ls, f ), Leaf( "a" ) )
+    val B = AdjacentGraph
+      .single( f )
+      .connect( NonEmptyList.one( f ), ls )
+      .connect( NonEmptyList.of( ls, f ), index( 0 ) )
+      .connect( NonEmptyList.of( index( 0 ), ls, f ), b )
+      .connect( NonEmptyList.of( b, index( 0 ), ls, f ), i )
+      .connect( NonEmptyList.of( i, b, index( 0 ), ls, f ), Leaf( "1" ) )
+      .connect( NonEmptyList.of( ls, f ), index( 1 ) )
+      .connect( NonEmptyList.of( index( 1 ), ls, f ), b )
+      .connect( NonEmptyList.of( b, index( 1 ), ls, f ), s )
+      .connect( NonEmptyList.of( s, b, index( 1 ), ls, f ), Leaf( "b" ) )
+    val diff = Mismatches.compare[Labelled.AsString, AdjacentGraph]( A, B, pl )
+    val expected =
+      AdjacentGraph
+        .single( Diff.same( f ) )
+        .connect( NonEmptyList.one( Diff.same( f ) ), Diff.same( ls ) )
+        .connect( NonEmptyList.of( Diff.same( ls ), Diff.same( f ) ), Diff.same( index( 0 ) ) )
+        .connect( NonEmptyList.of( Diff.same( index( 0 ) ), Diff.same( ls ), Diff.same( f ) ), Diff.same( b ) )
+        .connect(
+          NonEmptyList.of( Diff.same( b ), Diff.same( index( 0 ) ), Diff.same( ls ), Diff.same( f ) ),
+          Diff.same( i )
+        )
+        .connect(
+          NonEmptyList.of( Diff.same( i ), Diff.same( b ), Diff.same( index( 0 ) ), Diff.same( ls ), Diff.same( f ) ),
+          Diff.same( Leaf( "1" ) )
+        )
+        .connect( NonEmptyList.of( Diff.same( ls ), Diff.same( f ) ), Diff.same( index( 1 ) ) )
+        .connect( NonEmptyList.of( Diff.same( index( 1 ) ), Diff.same( ls ), Diff.same( f ) ), Diff.same( b ) )
+        .connect(
+          NonEmptyList.of( Diff.same( b ), Diff.same( index( 1 ) ), Diff.same( ls ), Diff.same( f ) ),
+          Diff.same( s )
+        )
+        .connect(
+          NonEmptyList.of( Diff.same( s ), Diff.same( b ), Diff.same( index( 1 ) ), Diff.same( ls ), Diff.same( f ) ),
+          Diff.removed( Leaf( "a" ) )
+        )
+        .connect(
+          NonEmptyList.of( Diff.same( s ), Diff.same( b ), Diff.same( index( 1 ) ), Diff.same( ls ), Diff.same( f ) ),
+          Diff.added( Leaf( "b" ) )
+        )
+    assert( diff === expected )
   }
 }
