@@ -105,7 +105,10 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
       .connect( NonEmptyList.one( Diff.same( f ) ), Diff.same( a ) )
       .connect( NonEmptyList.of( Diff.same( j ), Diff.same( f ) ), Diff.same( z ) )
       .connect( NonEmptyList.of( Diff.same( z ), Diff.same( j ), Diff.same( f ) ), Diff.same( i ) )
-      .connect( NonEmptyList.of( Diff.same(i), Diff.same( z ), Diff.same( j ), Diff.same( f ) ), Diff.same( Leaf( "1" ) ) )
+      .connect(
+        NonEmptyList.of( Diff.same( i ), Diff.same( z ), Diff.same( j ), Diff.same( f ) ),
+        Diff.same( Leaf( "1" ) )
+      )
       .connect( NonEmptyList.one( Diff.same( f ) ), Diff.added( l ) )
       .connect( NonEmptyList.of( Diff.added( l ), Diff.same( f ) ), Diff.added( g ) )
       .connect( NonEmptyList.of( Diff.added( g ), Diff.added( l ), Diff.same( f ) ), Diff.added( k ) )
@@ -216,13 +219,30 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
     assert(
       generated === expected,
       s"""
-      result: ${generated.data.map {
-        case ( path, adjs ) => path.head -> adjs
-      }}
-      expected: ${expected.data.map {
-        case ( path, adjs ) => path.head -> adjs
-      }}
+      result: ${generated.print}
+      expected: ${expected.print}
     """
     )
+  }
+  test( "a list" ) {
+    case class Foo(a: Int, ls: List[Int] )
+    val foo = Foo( 1, List( 1, 2 ) )
+    val generated = ToGraph.create[Foo, AdjacentGraph]( 'Foo, foo )
+    val expected = AdjacentGraph
+      .single( f )
+      .connect( NonEmptyList.one( f ), a )
+      .connect( NonEmptyList.of( a, f ), Leaf( "1" ) )
+      .connect( NonEmptyList.one( f ), Node( 'ls ) )
+      .connect( NonEmptyList.of( Node( 'ls ), f ), Leaf( "1" ) )
+      .connect( NonEmptyList.of( Node( 'ls ), f ), Leaf( "2" ) )
+    assert( generated === expected )
+  }
+  test( "a list with case classes" ) {
+    case class B(i: Int, e: String )
+    case class Z(b: B )
+    case class Foo(a: Int, ls: List[Z] )
+    val foo = Foo( 1, List( Z( B( 1, "a" ) ), Z( B( 2, "a" ) ) ) )
+    val generated = ToGraph.create[Foo, AdjacentGraph]( 'Foo, foo )
+    println( generated.print )
   }
 }

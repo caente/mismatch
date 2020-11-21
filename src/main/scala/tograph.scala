@@ -109,6 +109,15 @@ trait Hlists extends Bottom {
         }
       }
     }
+  implicit def generic[P, C, G[_]](
+      implicit
+      gen: LabelledGeneric.Aux[P, C],
+      G: Lazy[ToGraph[C, G, Labelled.AsString]]
+    ): ToGraph[P, G, Labelled.AsString] = new ToGraph[P, G, Labelled.AsString] {
+    def toGraph(parent: NonEmptyList[Labelled.AsString], p: P ): G[Labelled.AsString] => G[Labelled.AsString] =
+      G.value.toGraph( parent, gen.to( p ) )
+  }
+
 }
 object ToGraph extends Hlists {
 
@@ -134,13 +143,27 @@ object ToGraph extends Hlists {
       }
     }
   }
-
-  implicit def generic[P, C, G[_]](
+  implicit def listGraph[P, G[_]](
       implicit
-      gen: LabelledGeneric.Aux[P, C],
-      G: Lazy[ToGraph[C, G, Labelled.AsString]]
-    ): ToGraph[P, G, Labelled.AsString] = new ToGraph[P, G, Labelled.AsString] {
-    def toGraph(parent: NonEmptyList[Labelled.AsString], p: P ): G[Labelled.AsString] => G[Labelled.AsString] =
-      G.value.toGraph( parent, gen.to( p ) )
+      T: ToGraph[P, G, Labelled.AsString]
+    ): ToGraph[List[P], G, Labelled.AsString] = new ToGraph[List[P], G, Labelled.AsString] {
+    def toGraph(parent: NonEmptyList[Labelled.AsString], c: List[P] ): G[Labelled.AsString] => G[Labelled.AsString] = {
+      graph =>
+        c.foldLeft( graph ) { ( graph, p ) =>
+          T.toGraph( parent, p )( graph )
+        }
+    }
+  }
+  implicit def listShow[P, G[_]](
+      implicit
+      A: Connect[G],
+      S: Show[P]
+    ): ToGraph[List[P], G, Labelled.AsString] = new ToGraph[List[P], G, Labelled.AsString] {
+    def toGraph(parent: NonEmptyList[Labelled.AsString], c: List[P] ): G[Labelled.AsString] => G[Labelled.AsString] = {
+      graph =>
+        c.foldLeft( graph ) { ( graph, p ) =>
+          A.connect( graph )( parent, Leaf( p.show ) )
+        }
+    }
   }
 }
