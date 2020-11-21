@@ -125,4 +125,32 @@ class PrintGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with Symb
     val result = diff.print
     assert( result === expected )
   }
+
+  test( "graph with indexes" ) {
+    val gr = AdjacentGraph
+      .single( f )
+      .connect( NonEmptyList.one( f ), a )
+      .connect( NonEmptyList.of( a, f ), Leaf( "1" ) )
+      .connect( NonEmptyList.one( f ), Node( 'ls ) )
+      .connect( NonEmptyList.of( Node( 'ls ), f ), index( 0 ) )
+      .connect( NonEmptyList.of( index( 0 ), Node( 'ls ), f ), b )
+      .connect( NonEmptyList.of( b, index( 0 ), Node( 'ls ), f ), i )
+      .connect( NonEmptyList.of( i, b, index( 0 ), Node( 'ls ), f ), Leaf( "1" ) )
+      .connect( NonEmptyList.of( Node( 'ls ), f ), index( 1 ) )
+      .connect( NonEmptyList.of( index( 1 ), Node( 'ls ), f ), b )
+      .connect( NonEmptyList.of( b, index( 1 ), Node( 'ls ), f ), s )
+      .connect( NonEmptyList.of( s, b, index( 1 ), Node( 'ls ), f ), Leaf( "a" ) )
+    val expected = """'Foo
+|-->'a
+     |-->1
+|-->'ls
+      |-->0:'b
+             |-->'i
+                  |-->1
+      |-->1:'b
+             |-->'s
+                  |-->a"""
+    val result = gr.print
+    assert( result === expected )
+  }
 }
