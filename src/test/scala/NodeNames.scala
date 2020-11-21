@@ -1,5 +1,6 @@
 package utils
 import tograph._
+import cats.data.NonEmptyList
 
 object NodeNames {
   val f: Labelled.AsString = Node( 'Foo )
@@ -17,4 +18,6 @@ object NodeNames {
   val x: Labelled.AsString = Node( 'x )
   val y: Labelled.AsString = Node( 'y )
   val z: Labelled.AsString = Node( 'z )
+  val s: Labelled.AsString = Node( 's )
+  def index(i: Int ) = Index[String]( i )
 }

@@ -140,7 +140,6 @@ sealed abstract case class AdjacentGraph[Label: Eq: Ordering](
         case ( GraphVisitation( acc, visited ), adj ) if visited.contains( adj :: from ) =>
           GraphVisitation( acc, visited )
         case ( GraphVisitation( Printed( col, string ), visited ), adj ) =>
-          println( from.head )
           val ( adjString, length ) = from.head match {
             case Index( _ ) =>
               ( ":" + adj.representation, 1 + adj.length )
