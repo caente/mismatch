@@ -7,6 +7,7 @@ import cats.data.NonEmptyList
 import algorithm.Diff
 import simulacrum._
 import tograph.Labelled
+import tograph.Index
 
 object AdjacentGraph {
   def single[Label: Eq: Ordering](node: Label ): AdjacentGraph[Label] =
@@ -131,17 +132,26 @@ sealed abstract case class AdjacentGraph[Label: Eq: Ordering](
         visitation: GraphVisitation[Id, NonEmptyList[Label], Printed]
       ): GraphVisitation[Id, NonEmptyList[Label], Printed] = {
       val extraCols = " " * visitation.result.col
-      val newLines = s"\n$extraCols|"
+      val newLines = from.head match {
+        case Index( _ ) => ""
+        case _          => s"\n$extraCols|"
+      }
       adjacentsPath( from ).foldLeft( visitation ) {
         case ( GraphVisitation( acc, visited ), adj ) if visited.contains( adj :: from ) =>
           GraphVisitation( acc, visited )
         case ( GraphVisitation( Printed( col, string ), visited ), adj ) =>
-          val adjString = arrow + adj.representation
+          println( from.head )
+          val ( adjString, length ) = from.head match {
+            case Index( _ ) =>
+              ( ":" + adj.representation, 1 + adj.length )
+            case _ =>
+              ( arrow + adj.representation, adj.length + arrow.length )
+          }
           val branch =
             traverse(
               adj :: from,
               GraphVisitation[Id, NonEmptyList[Label], Printed](
-                Printed( col + adj.length + arrow.length, string :+ newLines :+ adjString ),
+                Printed( col + length, string :+ newLines :+ adjString ),
                 visited + (adj :: from)
               )
             )

@@ -22,10 +22,13 @@ object Labelled {
   implicit def ord[A: Ordering]: Ordering[Labelled[A]] = new Ordering[Labelled[A]] {
     def compare(x: Labelled[A], y: Labelled[A] ): Int = {
       ( x, y ) match {
-        case ( Leaf( _ ), Node( _ ) ) => -1
-        case ( Node( _ ), Leaf( _ ) ) => 1
-        case ( Leaf( x ), Leaf( y ) ) => Ordering[A].compare( x, y )
-        case ( Node( x ), Node( y ) ) => x.compare( y )
+        case ( Index( x ), Index( y ) ) => x.compare( y )
+        case ( Index( _ ), _ )          => -1
+        case ( _, Index( _ ) )          => 1
+        case ( Leaf( x ), Leaf( y ) )   => Ordering[A].compare( x, y )
+        case ( Leaf( _ ), _ )           => -1
+        case ( _, Leaf( _ ) )           => 1
+        case ( Node( x ), Node( y ) )   => x.compare( y )
       }
     }
   }
@@ -33,12 +36,14 @@ object Labelled {
   implicit def show[A: Show]: Show[Labelled[A]] = new Show[Labelled[A]] {
     def show(t: Labelled[A] ): String = t match {
       case Leaf( x )     => x.show
-      case Node( label ) => label.toString
+      case Index( x )    => x.show
+      case Node( label ) => label.show
     }
   }
 }
 case class Node[A](label: Symbol ) extends Labelled[A]
 case class Leaf[A](a: A ) extends Labelled[A]
+case class Index[A](i: Int ) extends Labelled[A]
 
 trait ToGraph[C, G[_], Label] {
   def toGraph(parent: NonEmptyList[Label], c: C ): G[Label] => G[Label]
@@ -145,13 +150,18 @@ object ToGraph extends Hlists {
   }
   implicit def listGraph[P, G[_]](
       implicit
-      T: ToGraph[P, G, Labelled.AsString]
+      T: ToGraph[P, G, Labelled.AsString],
+      A: Connect[G]
     ): ToGraph[List[P], G, Labelled.AsString] = new ToGraph[List[P], G, Labelled.AsString] {
     def toGraph(parent: NonEmptyList[Labelled.AsString], c: List[P] ): G[Labelled.AsString] => G[Labelled.AsString] = {
       graph =>
-        c.foldLeft( graph ) { ( graph, p ) =>
-          T.toGraph( parent, p )( graph )
-        }
+        c.foldLeft( ( graph, 0 ) ) {
+            case ( ( graph, index ), p ) =>
+              val indexLeaf = Index[String]( index )
+              val indexed = A.connect( graph )( parent, indexLeaf )
+              ( T.toGraph( indexLeaf :: parent, p )( indexed ), index + 1 )
+          }
+          ._1
     }
   }
   implicit def listShow[P, G[_]](

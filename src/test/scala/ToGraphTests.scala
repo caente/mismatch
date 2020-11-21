@@ -243,6 +243,27 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
     case class Foo(a: Int, ls: List[Z] )
     val foo = Foo( 1, List( Z( B( 1, "a" ) ), Z( B( 2, "a" ) ) ) )
     val generated = ToGraph.create[Foo, AdjacentGraph]( 'Foo, foo )
+    val expected = AdjacentGraph
+      .single( f )
+      .connect( NonEmptyList.one( f ), a )
+      .connect( NonEmptyList.of( a, f ), Leaf( "1" ) )
+      .connect( NonEmptyList.one( f ), Node( 'ls ) )
+      .connect( NonEmptyList.of( Node( 'ls ), f ), b )
+      .connect( NonEmptyList.of( b, Node( 'ls ), f ), e )
+      .connect( NonEmptyList.of( e, b, Node( 'ls ), f ), Leaf( "a" ) )
+      .connect( NonEmptyList.of( b, Node( 'ls ), f ), i )
+      .connect( NonEmptyList.of( i, b, Node( 'ls ), f ), Leaf( "1" ) )
+      .connect( NonEmptyList.of( i, b, Node( 'ls ), f ), Leaf( "2" ) )
+    assert( generated === expected )
+  }
+  test( "a list with case classes and sealed traits" ) {
+    sealed trait B
+    case class B1(i: Int ) extends B
+    case class B2(s: String ) extends B
+    case class Z(b: B )
+    case class Foo(a: Int, ls: List[Z] )
+    val foo = Foo( 1, List( Z( B1( 1 ) ), Z( B2( "a" ) ), Z( B1( 3 ) ), Z( B1( 4 ) ), Z( B2( "yes" ) ) ) )
+    val generated = ToGraph.create[Foo, AdjacentGraph]( 'Foo, foo )
     println( generated.print )
   }
 }
