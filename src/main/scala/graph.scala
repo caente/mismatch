@@ -303,6 +303,10 @@ object GraphOps {
     }
   }
 
+  private implicit class BooleanOp(val b: Boolean ) extends AnyVal {
+    def option[A](a: => A ): Option[A] =
+      if (b) Some( a ) else None
+  }
   def findPath[G[_], Label](
       g: G[Label]
     )(f: NonEmptyList[Label] => Boolean
@@ -317,8 +321,8 @@ object GraphOps {
       G.bfs( g )( rootPath, Option.empty[NonEmptyList[Label]], Set() )(
         combine = ( parent, node, result ) =>
           result
-            .orElse( Option.when( f( parent ) )( parent ) )
-            .orElse( Option.when( f( node :: parent ) )( node :: parent ) ),
+            .orElse( f( parent ).option( parent ) )
+            .orElse( f( node :: parent ).option( node :: parent ) ),
         stop = (result) => result.isDefined
       )
   }

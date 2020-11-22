@@ -1,8 +1,11 @@
-scalaVersion := "2.13.2"
 
 name := "mismatch"
 
 version := "0.1"
+
+lazy val scala212 = "2.12.10"
+
+scalaVersion := scala212
 
 libraryDependencies ++= Seq(
   "org.typelevel" %% "simulacrum" % "1.0.0",
@@ -19,10 +22,11 @@ libraryDependencies ++= Seq(
 )
 
 scalacOptions ++= Seq(
-  "-Ymacro-annotations"
   //"-Xlog-implicits"
 )
 
+
+addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
 addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full)
 
 
