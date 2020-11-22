@@ -1,4 +1,3 @@
-
 ## Example in Scala
 
 Example, given a case class `Foo` with nested case classes...
@@ -20,8 +19,6 @@ case class I()
 case class H(i:I)
 
 ```
-
-
 
 For this example, these are the two instances that want to compare:
 
@@ -47,17 +44,15 @@ val right = Foo(
      			h = Some(I()))
 ```
 
-
-
 ## Classes into Trees
 
 These classes can be seen as Directed Acyclic Graphs (DAGs). Where the nodes are the names of the fields of the classes, e.g. `f`, `c`, etc. And the leaves are actual values, e.g. an int or case class that we want to treat as  leaf, e.g. `G()`, `E()`, or `J()`.
 
 The graphs generated from classes will have the following properties:
 
-- There are no disconnected subgraphs
-- All edges are 1-to-many. 
--  There are no multiple edges between two nodes.
+*   There are no disconnected subgraphs
+*   All edges are 1-to-many.
+*   There are no multiple edges between two nodes.
 
 Which means that our DAGs are essentially trees.
 
@@ -96,11 +91,11 @@ In the case of DAGs from classes, we only care about the leafs, since all the pa
 | b,f   | b,h,i |
 | b,g   |       |
 
-At this point I thought that it would be as simple as just compare the two lists, but how to know that two nodes should be compared to each other? 
+At this point I thought that it would be as simple as just compare the two lists, but how to know that two nodes should be compared to each other?
 
 ## Graphs into matrices
 
-Before finding a way to compare the leaves as list of nodes, we first need to find the leaves. The _how_ depends on the graph encoding we choose. After a few considerations, I figured to use an _Incidence Matrix_ encoding. Where each column is a node, and each row, an edge. 
+Before finding a way to compare the leaves as list of nodes, we first need to find the leaves. The *how* depends on the graph encoding we choose. After a few considerations, I figured to use an *Incidence Matrix* encoding. Where each column is a node, and each row, an edge.
 
 For example, the following graph has 2 edges and 3 nodes.
 
@@ -109,8 +104,6 @@ graph TB
 a --> b
 a --> c
 ```
-
-
 
 Each row will only have two values: `-1` if the edge leaves the node corresponding to the column, and `1` if the edge is incoming.
 
@@ -135,7 +128,7 @@ if `N = 2` , then: `G(1,0) + G(1,0) = G(2,1)`, meaning that if there are two nod
 
 Subsequently, if `N = 3`:
 
-Then there must be three subgraphs: `G(1,0)`,  `G(1,0)`, and `G(1,0)`, one for each node. 
+Then there must be three subgraphs: `G(1,0)`,  `G(1,0)`, and `G(1,0)`, one for each node.
 
 And since all subgraphs need to be connected: `G(1,0) + G(1,0) + G(1,0) = G(2,1) + G(1,0) = G(3,2)`, since we need to add an edge every time two subgraphs are connected.
 
@@ -161,8 +154,6 @@ The matrices for `right` and `left` are ( Notice the column for `Foo` is absent)
 
 The leaves will be the columns which, when added all its rows, the result is > 0. The reason this work, is because this graphs are derived from classes, and thus it is not possible for a node to have two incoming edges. So at most any node will have a single `1`, if it has any number of negative values in the column, it will be impossible to have a sum > 0.
 
- 
-
 ### Left leaves
 
 | a    | b    | c    | d    | f    | g    | e    |
@@ -183,8 +174,6 @@ leaves = d, f, g, e
 | 0    | 0    | -1   | 0    | 0    | 1    | 0    |
 | 0    | 0    | 0    | 0    | -1   | 0    | 1    |
 
-
-
 ### Right leaves
 
 | a    | b    | c    | d    | h    | j    | i    |
@@ -195,7 +184,7 @@ leaves = d, j, i
 
 ### Fully qualified leaves
 
-Each label in the above matrices correspond to a _parameter name_ of a class. Two different classes could have parameters with the same name, therefore it is not safe to rely on the labels of the leaves. To identify a leaf, it will be better to take into account its full path from the root. In the graphs that we'll be dealing with, there will always be a single root node.
+Each label in the above matrices correspond to a *parameter name* of a class. Two different classes could have parameters with the same name, therefore it is not safe to rely on the labels of the leaves. To identify a leaf, it will be better to take into account its full path from the root. In the graphs that we'll be dealing with, there will always be a single root node.
 
 To find the full path of a leave, all we need to do is to traverse the matrix, for example, in the `Left graph`, to find the path of `e` the algorithm would  be the following:
 
@@ -213,7 +202,7 @@ Thus, each leaf can be uniquely identified by its path.
 
 While I was looking for several  algorithms for comparing graphs, I found this [Tree diffing](https://thume.ca/2017/06/17/tree-diffing) algorithm, which didn't adjust too well to my use case, but thanks to which I discovered the [Levenshtein distance](https://en.wikipedia.org/wiki/Levenshtein_distance) between two strings. And from there I arrived to the [Needleman–Wunsch algorithm](https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm), which is to find the "best match" for comparing two lists of different length. It was designed  to find similarities in the amino acid sequences of two proteins.
 
-Needleman–Wunsch returns a set of tuples of two lists, 
+Needleman–Wunsch returns a set of tuples of two lists,
 
 e.g.: for `a,b,c` and `a,c`  the best matches returned by the algorithm are:
 
@@ -247,12 +236,10 @@ I decided to use it for finding the bests matches for two lists of leaves. I ass
 | λ          | b,f   | ω          | b,h,i |
 | δ          | b,g   |            |       |
 
-The algorithm finds the best options for aligning the two sequences of leaves of `left` and `right` are: 
+The algorithm finds the best options for aligning the two sequences of leaves of `left` and `right` are:
 
-```
-αβλδ	αβλδ
-εβ-ω	εβω-
-```
+    αβλδ	αβλδ
+    εβ-ω	εβω-
 
 Which would expand to:
 
@@ -262,8 +249,6 @@ Which would expand to:
 | a,d   | a,d   | a,d   | a,d   |
 | b,f   | -     | b,f   | b,h,i |
 | b,g   | b,h,i | b,g   | -     |
-
-
 
 ### Mismatches
 
@@ -285,8 +270,6 @@ b,-,g
 b,h,i
 ```
 
-
-
 ### New DAGs from difference
 
 For each pairing:
@@ -301,11 +284,7 @@ for left, right in paring:
         add_edge(previous, Added(right))	
 ```
 
-
-
 To create a new graph we can iterate over the two lists simultaneously, of the two elements are the same, they become a single node, otherwise the graph branches:
-
-
 
 One intermediate step of the algorithm could be all the leaves duplicated:
 
@@ -319,17 +298,11 @@ b --> h2{{h}} --> i2{{i}}
 
 But the actual construction of the graph should avoid duplicated edges.
 
-
-
 ```mermaid
 graph TB
 b --> g(g)
 b --> h{{h}} --> i{{i}}
 ```
-
-
-
-
 
 To differentiate nodes and leaves from left we use round corners rectangles and for the right hexagons. Rectangles are common nodes/leaves:
 
