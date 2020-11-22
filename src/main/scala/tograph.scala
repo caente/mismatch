@@ -9,8 +9,14 @@ import cats.data.NonEmptyList
 import cats.Show
 import cats.kernel.Eq
 
+object `package` {
+  implicit object symbolOrd extends Ordering[Symbol] {
+    def compare(x: Symbol, y: Symbol ): Int = x.toString.compare( y.toString )
+  }
+}
 sealed trait Labelled[A]
 object Labelled {
+
   implicit def eq[A: Eq] = new Eq[Labelled[A]] {
     def eqv(x: Labelled[A], y: Labelled[A] ): Boolean =
       ( x, y ) match {
