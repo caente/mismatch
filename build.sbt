@@ -1,7 +1,6 @@
-
 name := "mismatch"
 
-version := "0.1"
+version := "0.01"
 
 lazy val scala212 = "2.12.10"
 
@@ -25,13 +24,11 @@ scalacOptions ++= Seq(
   //"-Xlog-implicits"
 )
 
-
-addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
-addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full)
-
+addCompilerPlugin( "org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full )
+addCompilerPlugin( "org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full )
 
 sourceGenerators in Test += Def.task {
   val file = (sourceManaged in Test).value / "amm.scala"
-  IO.write(file, """object amm extends App { ammonite.Main.main(args) }""")
-  Seq(file)
+  IO.write( file, """object amm extends App { ammonite.Main.main(args) }""" )
+  Seq( file )
 }.taskValue
