@@ -1,10 +1,10 @@
 name := "mismatch"
 
-version := "0.01"
+organization := "dimeder"
 
-lazy val scala212 = "2.12.10"
+version := "0.1"
 
-scalaVersion := scala212
+scalaVersion := "2.12.10"
 
 libraryDependencies ++= Seq(
   "org.typelevel" %% "simulacrum" % "1.0.0",
