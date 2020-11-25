@@ -6,14 +6,16 @@ import labelled._
 import ops.record._
 import cats.implicits._
 import cats.data.NonEmptyList
-import cats.Show
-import cats.kernel.Eq
+import cats._
+import algorithm.Diff
+import algorithm.Mismatches
 
 object `package` {
   implicit object symbolOrd extends Ordering[Symbol] {
     def compare(x: Symbol, y: Symbol ): Int = x.toString.compare( y.toString )
   }
 }
+
 sealed trait Labelled[A]
 object Labelled {
 
