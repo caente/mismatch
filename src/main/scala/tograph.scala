@@ -185,4 +185,24 @@ object ToGraph extends Hlists {
         }
     }
   }
+  implicit def mapGraph[K: Ordering, V, G[_]](
+      implicit
+      A: Connect[G],
+      K: Show[K],
+      V: ToGraph[V, G, Labelled.AsString]
+    ): ToGraph[Map[K, V], G, Labelled.AsString] = new ToGraph[Map[K, V], G, Labelled.AsString] {
+    def toGraph(
+        parent: NonEmptyList[Labelled.AsString],
+        c: Map[K, V]
+      ): G[Labelled.AsString] => G[Labelled.AsString] = { graph =>
+      c.keySet.toList.sorted
+        .foldLeft( ( graph, 0 ) ) {
+          case ( ( graph, index ), k ) =>
+            val indexLeaf = Leaf( k.show )
+            val indexed = A.connect( graph )( parent, indexLeaf )
+            ( V.toGraph( indexLeaf :: parent, c( k ) )( indexed ), index + 1 )
+        }
+        ._1
+    }
+  }
 }

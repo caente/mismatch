@@ -235,7 +235,16 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
       .connect( NonEmptyList.one( f ), ls )
       .connect( NonEmptyList.of( ls, f ), Leaf( "1" ) )
       .connect( NonEmptyList.of( ls, f ), Leaf( "2" ) )
-    assert( generated === expected )
+    assert(
+      generated === expected,
+      s"""
+      generated:
+      ${generated.print}
+      --------------------------------------
+      expected: 
+      ${expected.print}
+      """
+    )
   }
   test( "a list with case classes" ) {
     case class B(i: Int, e: String )
@@ -284,5 +293,66 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
       .connect( NonEmptyList.of( b, index( 1 ), ls, f ), s )
       .connect( NonEmptyList.of( s, b, index( 1 ), ls, f ), Leaf( "a" ) )
     assert( generated === expected )
+  }
+  test( "a map" ) {
+    case class Foo(a: Int, ls: Map[Int, List[String]] )
+    val foo = Foo( 1, Map( 1 -> List( "a", "b" ), 2 -> List( "b", "d" ) ) )
+    val generated = ToGraph.create[Foo, AdjacentGraph]( 'Foo, foo )
+    val expected = AdjacentGraph
+      .single( f )
+      .connect( NonEmptyList.one( f ), a )
+      .connect( NonEmptyList.of( a, f ), Leaf( "1" ) )
+      .connect( NonEmptyList.one( f ), ls )
+      .connect( NonEmptyList.of( ls, f ), Leaf( "1" ) )
+      .connect( NonEmptyList.of( ls, f ), Leaf( "2" ) )
+      .connect( NonEmptyList.of( Leaf( "1" ), ls, f ), Leaf( "a" ) )
+      .connect( NonEmptyList.of( Leaf( "1" ), ls, f ), Leaf( "b" ) )
+      .connect( NonEmptyList.of( Leaf( "2" ), ls, f ), Leaf( "b" ) )
+      .connect( NonEmptyList.of( Leaf( "2" ), ls, f ), Leaf( "d" ) )
+    assert(
+      generated === expected,
+      s"""
+      generated:
+      ${generated.print}
+      --------------------------------------
+      expected: 
+      ${expected.print}
+      """
+    )
+  }
+  test( "a map with case classes and sealed traits" ) {
+    sealed trait B
+    case class B1(i: Int ) extends B
+    case class B2(s: String ) extends B
+    case class Z(b: B )
+    case class Foo(a: Int, ls: Map[Int, Z] )
+    val foo = Foo( 1, Map( 1 -> Z( B1( 1 ) ), 2 -> Z( B2( "a" ) ) ) )
+    val generated = ToGraph.create[Foo, AdjacentGraph]( 'Foo, foo )
+    val expected = AdjacentGraph
+      .single( f )
+      .connect( NonEmptyList.one( f ), a )
+      .connect( NonEmptyList.of( a, f ), Leaf( "1" ) )
+      .connect( NonEmptyList.one( f ), ls )
+      .connect( NonEmptyList.of( ls, f ), Leaf( "1" ) )
+      .connect( NonEmptyList.of( Leaf( "1" ), ls, f ), b )
+      .connect( NonEmptyList.of( b, Leaf( "1" ), ls, f ), i )
+      .connect( NonEmptyList.of( i, b, Leaf( "1" ), ls, f ), Leaf( "1" ) )
+      .connect( NonEmptyList.of( ls, f ), Leaf( "2" ) )
+      .connect( NonEmptyList.of( Leaf( "2" ), ls, f ), b )
+      .connect( NonEmptyList.of( b, Leaf( "2" ), ls, f ), s )
+      .connect( NonEmptyList.of( s, b, Leaf( "2" ), ls, f ), Leaf( "a" ) )
+    assert(
+      generated === expected,
+      s"""
+      generated:
+      ${generated.print}
+      --------------------------------------
+      expected: 
+      ${expected.print}
+      --------------------------------------
+      diff:
+      ${Mismatches.compare( generated, expected, pl ).print}
+      """
+    )
   }
 }
