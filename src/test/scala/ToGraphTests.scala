@@ -50,8 +50,8 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
         )
       )
     )
-    val generated = ToGraph.create[Foo, AdjacentGraph]( 'Foo, foo )
-    assert( generated === manual )
+    val generated = ToGraph.create[Foo, AdjacentGraph]( "Foo", foo )
+    assert( generated === manual, generated.print )
   }
   test( "compare two different classes" ) {
     case class Z(i: Int )
@@ -96,8 +96,8 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
       ),
       j = J( Z( 1 ) )
     )
-    val generated_Left = ToGraph.create[Foo_Left, AdjacentGraph]( 'Foo, foo_Left )
-    val generated_Right = ToGraph.create[Foo_Right, AdjacentGraph]( 'Foo, foo_Right )
+    val generated_Left = ToGraph.create[Foo_Left, AdjacentGraph]( "Foo", foo_Left )
+    val generated_Right = ToGraph.create[Foo_Right, AdjacentGraph]( "Foo", foo_Right )
     val compared = Mismatches.compare( generated_Left, generated_Right, pl )
     val expected = AdjacentGraph
       .single( Diff.same( f ) )
@@ -151,7 +151,7 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
     case class B(i: Int )
     case class Foo(a: Option[A], b: Option[B] )
     val foo = Foo( Some( A( 1 ) ), None )
-    val generated = ToGraph.create[Foo, AdjacentGraph]( 'Foo, foo )
+    val generated = ToGraph.create[Foo, AdjacentGraph]( "Foo", foo )
     val expected = AdjacentGraph
       .single( f )
       .connect( NonEmptyList.one( f ), a )
@@ -165,7 +165,7 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
     case class B(i: Int )
     case class Foo(a: Option[A], b: Option[B] )
     val foo = Foo( Some( A( 1 ) ), Some( B( 1 ) ) )
-    val generated = ToGraph.create[Foo, AdjacentGraph]( 'Foo, foo )
+    val generated = ToGraph.create[Foo, AdjacentGraph]( "Foo", foo )
     val expected = AdjacentGraph
       .single( f )
       .connect( NonEmptyList.one( f ), a )
@@ -182,7 +182,7 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
     case class A2(i: Int ) extends A
     case class Foo(a: A, b: A )
     val foo = Foo( a = A2( 1 ), b = A1( 1 ) )
-    val generated = ToGraph.create[Foo, AdjacentGraph]( 'Foo, foo )
+    val generated = ToGraph.create[Foo, AdjacentGraph]( "Foo", foo )
     val expected = AdjacentGraph
       .single( f )
       .connect( NonEmptyList.one( f ), a )
@@ -205,7 +205,7 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
         b = B( i = 2 )
       )
     )
-    val generated = ToGraph.create[Foo, AdjacentGraph]( 'Foo, foo )
+    val generated = ToGraph.create[Foo, AdjacentGraph]( "Foo", foo )
     val expected = AdjacentGraph
       .single( f )
       .connect( NonEmptyList.one( f ), a )
@@ -227,7 +227,7 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
   test( "a list" ) {
     case class Foo(a: Int, ls: List[Int] )
     val foo = Foo( 1, List( 1, 2 ) )
-    val generated = ToGraph.create[Foo, AdjacentGraph]( 'Foo, foo )
+    val generated = ToGraph.create[Foo, AdjacentGraph]( "Foo", foo )
     val expected = AdjacentGraph
       .single( f )
       .connect( NonEmptyList.one( f ), a )
@@ -251,7 +251,7 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
     case class Z(b: B )
     case class Foo(a: Int, ls: List[Z] )
     val foo = Foo( 1, List( Z( B( 1, "a" ) ), Z( B( 2, "a" ) ) ) )
-    val generated = ToGraph.create[Foo, AdjacentGraph]( 'Foo, foo )
+    val generated = ToGraph.create[Foo, AdjacentGraph]( "Foo", foo )
     val expected = AdjacentGraph
       .single( f )
       .connect( NonEmptyList.one( f ), a )
@@ -278,7 +278,7 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
     case class Z(b: B )
     case class Foo(a: Int, ls: List[Z] )
     val foo = Foo( 1, List( Z( B1( 1 ) ), Z( B2( "a" ) ) ) )
-    val generated = ToGraph.create[Foo, AdjacentGraph]( 'Foo, foo )
+    val generated = ToGraph.create[Foo, AdjacentGraph]( "Foo", foo )
     val expected = AdjacentGraph
       .single( f )
       .connect( NonEmptyList.one( f ), a )
@@ -297,7 +297,7 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
   test( "a map" ) {
     case class Foo(a: Int, ls: Map[Int, List[String]] )
     val foo = Foo( 1, Map( 1 -> List( "a", "b" ), 2 -> List( "b", "d" ) ) )
-    val generated = ToGraph.create[Foo, AdjacentGraph]( 'Foo, foo )
+    val generated = ToGraph.create[Foo, AdjacentGraph]( "Foo", foo )
     val expected = AdjacentGraph
       .single( f )
       .connect( NonEmptyList.one( f ), a )
@@ -327,7 +327,7 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
     case class Z(b: B )
     case class Foo(a: Int, ls: Map[Int, Z] )
     val foo = Foo( 1, Map( 1 -> Z( B1( 1 ) ), 2 -> Z( B2( "a" ) ) ) )
-    val generated = ToGraph.create[Foo, AdjacentGraph]( 'Foo, foo )
+    val generated = ToGraph.create[Foo, AdjacentGraph]( "Foo", foo )
     val expected = AdjacentGraph
       .single( f )
       .connect( NonEmptyList.one( f ), a )

@@ -14,31 +14,31 @@ import cats.instances.string._
 
 class PrintGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolInstances {
   test( "print graph" ) {
-    val g = AdjacentGraph
-      .single( 'Foo )
-      .addEdge( 'Foo, 'a )
-      .addEdge( 'a, 'c )
-      .addEdge( 'a, 'd )
-      .addEdge( 'c, 'x )
-      .addEdge( 'c, 'i )
-      .addEdge( 'Foo, 'b )
-      .addEdge( 'b, 'h )
-      .addEdge( 'b, 'g )
-      .addEdge( 'g, 'r )
-      .addEdge( 'r, 'z )
+    val gr = AdjacentGraph
+      .single( f )
+      .addEdge( f, a )
+      .addEdge( a, c )
+      .addEdge( a, d )
+      .addEdge(c,x )
+      .addEdge( c, i )
+      .addEdge( f, b )
+      .addEdge( b, h )
+      .addEdge( b, g )
+      .addEdge( g,r )
+      .addEdge( r, z )
     val expected =
-      """'Foo
-|-->'a
-     |-->'c
-          |-->'i
-          |-->'x
-     |-->'d
-|-->'b
-     |-->'g
-          |-->'r
-               |-->'z
-     |-->'h"""
-    val result = g.print
+      """Foo
+|-->a
+    |-->c
+        |-->i
+        |-->x
+    |-->d
+|-->b
+    |-->g
+        |-->r
+            |-->z
+    |-->h"""
+    val result = gr.print
     assert( result === expected )
   }
   test( "print path graph with leafs at the end" ) {
@@ -50,13 +50,13 @@ class PrintGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with Symb
       .connect( NonEmptyList.of( a, f ), c )
       .connect( NonEmptyList.of( c, a, f ), j )
       .connect( NonEmptyList.of( j, c, a, f ), x )
-    val expected = """'Foo
-|-->'a
-     |-->'c
-          |-->'j
-               |-->'x
-     |-->'d
-          |-->'k"""
+    val expected = """Foo
+|-->a
+    |-->c
+        |-->j
+            |-->x
+    |-->d
+        |-->k"""
 
     val result = gr.print
     assert( result === expected )
@@ -100,28 +100,28 @@ class PrintGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with Symb
       )
       .connect( NonEmptyList.of( Diff.removed( b ), Diff.same( f ) ), Diff.removed( h ) )
       .connect( NonEmptyList.of( Diff.removed( h ), Diff.removed( b ), Diff.same( f ) ), Diff.removed( Leaf( "1" ) ) )
-    val expected = s"""'Foo
-|-->'a
-     |-->'c
-          |-->${Diff.red( "'e" )}
-               |-->${Diff.red( "1" )}
-          |-->${Diff.green( "'j" )}
-               |-->${Diff.green( "1" )}
-     |-->'d
-          |-->${Diff.red( "1" )}
-          |-->${Diff.green( "2" )}
-|-->${Diff.red( "'b" )}
-     |-->${Diff.red( "'g" )}
-          |-->${Diff.red( "'k" )}
-               |-->${Diff.red( "1" )}
-     |-->${Diff.red( "'h" )}
-          |-->${Diff.red( "1" )}
-|-->${Diff.green( "'l" )}
-     |-->${Diff.green( "'g" )}
-          |-->${Diff.green( "'k" )}
-               |-->${Diff.green( "1" )}
-     |-->${Diff.green( "'h" )}
-          |-->${Diff.green( "1" )}"""
+    val expected = s"""Foo
+|-->a
+    |-->c
+        |-->${Diff.red( "e" )}
+            |-->${Diff.red( "1" )}
+        |-->${Diff.green( "j" )}
+            |-->${Diff.green( "1" )}
+    |-->d
+        |-->${Diff.red( "1" )}
+        |-->${Diff.green( "2" )}
+|-->${Diff.red( "b" )}
+    |-->${Diff.red( "g" )}
+        |-->${Diff.red( "k" )}
+            |-->${Diff.red( "1" )}
+    |-->${Diff.red( "h" )}
+        |-->${Diff.red( "1" )}
+|-->${Diff.green( "l" )}
+    |-->${Diff.green( "g" )}
+        |-->${Diff.green( "k" )}
+            |-->${Diff.green( "1" )}
+    |-->${Diff.green( "h" )}
+        |-->${Diff.green( "1" )}"""
     val result = diff.print
     assert( result === expected )
   }
@@ -131,25 +131,25 @@ class PrintGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with Symb
       .single( f )
       .connect( NonEmptyList.one( f ), a )
       .connect( NonEmptyList.of( a, f ), Leaf( "1" ) )
-      .connect( NonEmptyList.one( f ), Node( 'ls ) )
-      .connect( NonEmptyList.of( Node( 'ls ), f ), index( 0 ) )
-      .connect( NonEmptyList.of( index( 0 ), Node( 'ls ), f ), b )
-      .connect( NonEmptyList.of( b, index( 0 ), Node( 'ls ), f ), i )
-      .connect( NonEmptyList.of( i, b, index( 0 ), Node( 'ls ), f ), Leaf( "1" ) )
-      .connect( NonEmptyList.of( Node( 'ls ), f ), index( 1 ) )
-      .connect( NonEmptyList.of( index( 1 ), Node( 'ls ), f ), b )
-      .connect( NonEmptyList.of( b, index( 1 ), Node( 'ls ), f ), s )
-      .connect( NonEmptyList.of( s, b, index( 1 ), Node( 'ls ), f ), Leaf( "a" ) )
-    val expected = """'Foo
-|-->'a
-     |-->1
-|-->'ls
-      |-->0:'b
-             |-->'i
-                  |-->1
-      |-->1:'b
-             |-->'s
-                  |-->a"""
+      .connect( NonEmptyList.one( f ), Node( "ls" ) )
+      .connect( NonEmptyList.of( Node( "ls" ), f ), index( 0 ) )
+      .connect( NonEmptyList.of( index( 0 ), Node( "ls" ), f ), b )
+      .connect( NonEmptyList.of( b, index( 0 ), Node( "ls" ), f ), i )
+      .connect( NonEmptyList.of( i, b, index( 0 ), Node( "ls" ), f ), Leaf( "1" ) )
+      .connect( NonEmptyList.of( Node( "ls" ), f ), index( 1 ) )
+      .connect( NonEmptyList.of( index( 1 ), Node( "ls" ), f ), b )
+      .connect( NonEmptyList.of( b, index( 1 ), Node( "ls" ), f ), s )
+      .connect( NonEmptyList.of( s, b, index( 1 ), Node( "ls" ), f ), Leaf( "a" ) )
+    val expected = """Foo
+|-->a
+    |-->1
+|-->ls
+     |-->0:b
+           |-->i
+               |-->1
+     |-->1:b
+           |-->s
+               |-->a"""
     val result = gr.print
     assert( result === expected )
   }

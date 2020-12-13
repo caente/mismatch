@@ -10,6 +10,8 @@ import cats._
 import algorithm.Diff
 import algorithm.Mismatches
 import scala.annotation.implicitNotFound
+import magnolia._
+import scala.language.experimental.macros
 
 object `package` {
   implicit object symbolOrd extends Ordering[Symbol] {
@@ -51,7 +53,7 @@ object Labelled {
     }
   }
 }
-case class Node[A](label: Symbol ) extends Labelled[A]
+case class Node[A](label: String ) extends Labelled[A]
 case class Leaf[A](a: A ) extends Labelled[A]
 case class Index[A](i: Int ) extends Labelled[A]
 
@@ -71,7 +73,7 @@ trait Bottom {
         parent: NonEmptyList[Labelled.AsString],
         c: FieldType[K, H] :: T
       ): G[Labelled.AsString] => G[Labelled.AsString] = { graph =>
-      val label: Labelled.AsString = Node( key.value )
+      val label: Labelled.AsString = Node( key.value.toString.drop(1) )
       val graphWithLabel = A.connect( graph )( parent, label )
       val graphWithLeaf = A.connect( graphWithLabel )( label :: parent, Leaf( Show[H].show( c.head ) ) )
       N.toGraph( parent, c.tail )( graphWithLeaf )
@@ -92,7 +94,9 @@ trait Hlists extends Bottom {
         c: FieldType[K, H] :: T
       ): G[Labelled.AsString] => G[Labelled.AsString] = { graph =>
       N.toGraph( parent, c.tail )(
-        C.toGraph( Node[String]( key.value ) :: parent, c.head )( A.connect( graph )( parent, Node( key.value ) ) )
+        C.toGraph( Node[String]( key.value.toString.drop(1) ) :: parent, c.head )(
+          A.connect( graph )( parent, Node( key.value.toString.drop(1) ) )
+        )
       )
     }
   }
@@ -135,10 +139,30 @@ trait Hlists extends Bottom {
   }
 
 }
+trait Magnolia[G[_]] {
+  type Typeclass[T] = ToGraph[T, G, Labelled[String]]
+  def connect: Connect[G]
+  def combine[T](caseClass: CaseClass[Typeclass, T] ): Typeclass[T] =
+    new ToGraph[T, G, Labelled[String]] {
+      def toGraph(parent: NonEmptyList[Labelled[String]], c: T ): G[Labelled[String]] => G[Labelled[String]] = {
+        graph =>
+          caseClass.parameters.foldLeft( graph ) { ( graph, p ) =>
+            p.typeclass.toGraph( Node[String]( p.label ) :: parent, p.dereference( c ) )(
+              connect.connect( graph )( parent, Node( p.label ) )
+            )
+          }
+      }
+    }
+  def dispatch[T](sealedTrait: SealedTrait[Typeclass, T] ): Typeclass[T] =
+    new ToGraph[T, G, Labelled[String]] {
+      def toGraph(parent: NonEmptyList[Labelled[String]], c: T ): G[Labelled[String]] => G[Labelled[String]] = ???
+    }
+  implicit def gen[T]: Typeclass[T] = macro Magnolia.gen[T]
+}
 object ToGraph extends Hlists {
 
   def create[C, G[_]](
-      root: Symbol,
+      root: String,
       c: C
     )(implicit G: ToGraph[C, G, Labelled.AsString],
       C: CreateGraph[G]
