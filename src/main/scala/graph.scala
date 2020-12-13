@@ -11,6 +11,7 @@ import tograph.Index
 import algorithm.Same
 import algorithm.Added
 import algorithm.Removed
+import scala.annotation.implicitNotFound
 
 object AdjacentGraph {
   def single[Label: Eq: Ordering](node: Label ): AdjacentGraph[Label] =
@@ -83,8 +84,8 @@ object AdjacentGraph {
     }
 }
 
-@typeclass
-trait Representation[Label] {
+@implicitNotFound( "Implicit not found for Representation[${Label}]" )
+@typeclass trait Representation[Label] {
   def representation(label: Label ): String
   def length(label: Label ): Int
 }
@@ -171,6 +172,7 @@ sealed abstract case class AdjacentGraph[Label: Eq: Ordering](
 
 case class GraphVisitation[F[_], Label, B](result: F[B], visited: Set[Label] )
 
+@implicitNotFound( "Implicit not found for DFS[${G}]" )
 trait DFS[G[_]] {
   def dfs[F[_], Label, B](
       g: G[Label]
@@ -182,6 +184,7 @@ trait DFS[G[_]] {
     ): GraphVisitation[F, NonEmptyList[Label], B]
 }
 
+@implicitNotFound( "Implicit not found for BFS[${G}]" )
 trait BFS[G[_]] {
   def bfs[F[_], Label, B](
       g: G[Label]
@@ -193,14 +196,17 @@ trait BFS[G[_]] {
     ): GraphVisitation[F, NonEmptyList[Label], B]
 }
 
+@implicitNotFound( "Implicit not found for CreateGraph[${G}]" )
 trait CreateGraph[G[_]] {
   def create[Label: Eq: Ordering](l: Label ): G[Label]
 }
 
+@implicitNotFound( "Implicit not found for Connect[${G}]" )
 trait Connect[G[_]] {
   def connect[Label: Eq: Ordering](g: G[Label] )(path: NonEmptyList[Label], node: Label ): G[Label]
 }
 
+@implicitNotFound( "Implicit not found for Root[${G}]" )
 trait Root[G[_]] {
   def root[Label](g: G[Label] ): Label
 }

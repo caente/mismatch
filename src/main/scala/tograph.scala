@@ -9,6 +9,7 @@ import cats.data.NonEmptyList
 import cats._
 import algorithm.Diff
 import algorithm.Mismatches
+import scala.annotation.implicitNotFound
 
 object `package` {
   implicit object symbolOrd extends Ordering[Symbol] {
@@ -54,6 +55,7 @@ case class Node[A](label: Symbol ) extends Labelled[A]
 case class Leaf[A](a: A ) extends Labelled[A]
 case class Index[A](i: Int ) extends Labelled[A]
 
+@implicitNotFound( "Implicit not found for ToGraph[${C}, ${G}, ${Label}]" )
 trait ToGraph[C, G[_], Label] {
   def toGraph(parent: NonEmptyList[Label], c: C ): G[Label] => G[Label]
 }

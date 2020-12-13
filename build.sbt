@@ -17,7 +17,9 @@ libraryDependencies ++= Seq(
   "io.higherkindness" %% "droste-core" % "0.8.0",
   "com.lihaoyi" % "ammonite" % "2.2.0" cross CrossVersion.full,
   "org.scalactic" %% "scalactic" % "3.2.0",
-  "org.scalatest" %% "scalatest" % "3.2.0" % "test"
+  "org.scalatest" %% "scalatest" % "3.2.0" % "test",
+  "com.propensive" %% "magnolia" % "0.16.0",
+  "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided
 )
 
 scalacOptions ++= Seq(
