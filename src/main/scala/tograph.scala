@@ -1,9 +1,6 @@
 package tograph
 
 import graph._
-import shapeless._
-import labelled._
-import ops.record._
 import cats.implicits._
 import cats.data.NonEmptyList
 import cats._
@@ -61,6 +58,8 @@ case class Index[A](i: Int ) extends Labelled[A]
 trait ToGraph[C, G[_], Label] {
   def toGraph(parent: NonEmptyList[Label], c: C ): G[Label] => G[Label]
 }
+
+/*
 trait Bottom {
   implicit def cconsNot[H, K <: Symbol, T <: HList, G[_]](
       implicit
@@ -73,7 +72,7 @@ trait Bottom {
         parent: NonEmptyList[Labelled.AsString],
         c: FieldType[K, H] :: T
       ): G[Labelled.AsString] => G[Labelled.AsString] = { graph =>
-      val label: Labelled.AsString = Node( key.value.toString.drop(1) )
+      val label: Labelled.AsString = Node( key.value.toString.drop( 1 ) )
       val graphWithLabel = A.connect( graph )( parent, label )
       val graphWithLeaf = A.connect( graphWithLabel )( label :: parent, Leaf( Show[H].show( c.head ) ) )
       N.toGraph( parent, c.tail )( graphWithLeaf )
@@ -94,8 +93,8 @@ trait Hlists extends Bottom {
         c: FieldType[K, H] :: T
       ): G[Labelled.AsString] => G[Labelled.AsString] = { graph =>
       N.toGraph( parent, c.tail )(
-        C.toGraph( Node[String]( key.value.toString.drop(1) ) :: parent, c.head )(
-          A.connect( graph )( parent, Node( key.value.toString.drop(1) ) )
+        C.toGraph( Node[String]( key.value.toString.drop( 1 ) ) :: parent, c.head )(
+          A.connect( graph )( parent, Node( key.value.toString.drop( 1 ) ) )
         )
       )
     }
@@ -139,7 +138,15 @@ trait Hlists extends Bottom {
   }
 
 }
-trait Magnolia[G[_]] {
+ */
+trait Bottom {
+  implicit def fromShow[A, G[_]](implicit A: Show[A], G: Connect[G] ) = new ToGraph[A, G, Labelled[String]] {
+    def toGraph(parent: NonEmptyList[Labelled[String]], c: A ): G[Labelled[String]] => G[Labelled[String]] = { graph =>
+      G.connect( graph )( parent, Leaf( c.show ) )
+    }
+  }
+}
+trait Magnolia[G[_]] extends Bottom{
   type Typeclass[T] = ToGraph[T, G, Labelled[String]]
   def connect: Connect[G]
   def combine[T](caseClass: CaseClass[Typeclass, T] ): Typeclass[T] =
@@ -155,11 +162,16 @@ trait Magnolia[G[_]] {
     }
   def dispatch[T](sealedTrait: SealedTrait[Typeclass, T] ): Typeclass[T] =
     new ToGraph[T, G, Labelled[String]] {
-      def toGraph(parent: NonEmptyList[Labelled[String]], c: T ): G[Labelled[String]] => G[Labelled[String]] = ???
+      def toGraph(parent: NonEmptyList[Labelled[String]], c: T ): G[Labelled[String]] => G[Labelled[String]] = {
+        graph =>
+          sealedTrait.dispatch( c ) { subType =>
+            subType.typeclass.toGraph( parent, subType.cast( c ) )( graph )
+          }
+      }
     }
   implicit def gen[T]: Typeclass[T] = macro Magnolia.gen[T]
 }
-object ToGraph extends Hlists {
+trait ToGraphInstances[G[_]] extends Magnolia[G] {
 
   def create[C, G[_]](
       root: String,
@@ -199,18 +211,18 @@ object ToGraph extends Hlists {
           ._1
     }
   }
-  implicit def listShow[P, G[_]](
-      implicit
-      A: Connect[G],
-      S: Show[P]
-    ): ToGraph[List[P], G, Labelled.AsString] = new ToGraph[List[P], G, Labelled.AsString] {
-    def toGraph(parent: NonEmptyList[Labelled.AsString], c: List[P] ): G[Labelled.AsString] => G[Labelled.AsString] = {
-      graph =>
-        c.foldLeft( graph ) { ( graph, p ) =>
-          A.connect( graph )( parent, Leaf( p.show ) )
-        }
-    }
-  }
+ //implicit def listShow[P, G[_]](
+ //    implicit
+ //    A: Connect[G],
+ //    S: Show[P]
+ //  ): ToGraph[List[P], G, Labelled.AsString] = new ToGraph[List[P], G, Labelled.AsString] {
+ //  def toGraph(parent: NonEmptyList[Labelled.AsString], c: List[P] ): G[Labelled.AsString] => G[Labelled.AsString] = {
+ //    graph =>
+ //      c.foldLeft( graph ) { ( graph, p ) =>
+ //        A.connect( graph )( parent, Leaf( p.show ) )
+ //      }
+ //  }
+ //}
   implicit def mapGraph[K: Ordering, V, G[_]](
       implicit
       A: Connect[G],
@@ -231,4 +243,8 @@ object ToGraph extends Hlists {
         ._1
     }
   }
+}
+
+object ToGraph extends ToGraphInstances[AdjacentGraph] {
+  def connect: Connect[AdjacentGraph] = implicitly[Connect[AdjacentGraph]]
 }

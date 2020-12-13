@@ -233,8 +233,10 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
       .connect( NonEmptyList.one( f ), a )
       .connect( NonEmptyList.of( a, f ), Leaf( "1" ) )
       .connect( NonEmptyList.one( f ), ls )
-      .connect( NonEmptyList.of( ls, f ), Leaf( "1" ) )
-      .connect( NonEmptyList.of( ls, f ), Leaf( "2" ) )
+      .connect( NonEmptyList.of( ls, f ), Index( 0 ) )
+      .connect( NonEmptyList.of( Index( 0 ), ls, f ), Leaf( "1" ) )
+      .connect( NonEmptyList.of( ls, f ), Index( 1 ) )
+      .connect( NonEmptyList.of( Index( 1 ), ls, f ), Leaf( "2" ) )
     assert(
       generated === expected,
       s"""
@@ -305,10 +307,14 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
       .connect( NonEmptyList.one( f ), ls )
       .connect( NonEmptyList.of( ls, f ), Leaf( "1" ) )
       .connect( NonEmptyList.of( ls, f ), Leaf( "2" ) )
-      .connect( NonEmptyList.of( Leaf( "1" ), ls, f ), Leaf( "a" ) )
-      .connect( NonEmptyList.of( Leaf( "1" ), ls, f ), Leaf( "b" ) )
-      .connect( NonEmptyList.of( Leaf( "2" ), ls, f ), Leaf( "b" ) )
-      .connect( NonEmptyList.of( Leaf( "2" ), ls, f ), Leaf( "d" ) )
+      .connect( NonEmptyList.of( Leaf( "1" ), ls, f ), Index( 0 ) )
+      .connect( NonEmptyList.of( Index( 0 ), Leaf( "1" ), ls, f ), Leaf( "a" ) )
+      .connect( NonEmptyList.of( Leaf( "1" ), ls, f ), Index( 1 ) )
+      .connect( NonEmptyList.of( Index( 1 ), Leaf( "1" ), ls, f ), Leaf( "b" ) )
+      .connect( NonEmptyList.of( Leaf( "2" ), ls, f ), Index( 0 ) )
+      .connect( NonEmptyList.of( Index( 0 ), Leaf( "2" ), ls, f ), Leaf( "b" ) )
+      .connect( NonEmptyList.of( Leaf( "2" ), ls, f ), Index( 1 ) )
+      .connect( NonEmptyList.of( Index( 1 ), Leaf( "2" ), ls, f ), Leaf( "d" ) )
     assert(
       generated === expected,
       s"""
