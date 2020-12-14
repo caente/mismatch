@@ -58,14 +58,14 @@ case class Index[A](i: Int ) extends Labelled[A]
 trait ToGraph[C, G[_], Label] {
   def toGraph(parent: NonEmptyList[Label], c: C ): G[Label] => G[Label]
 }
-trait Bottom {
-  implicit def fromShow[A, G[_]](implicit A: Show[A], G: Connect[G] ) = new ToGraph[A, G, Labelled[String]] {
+trait Bottom[G[_]] {
+  implicit def fromShow[A](implicit A: Show[A], G: Connect[G] ) = new ToGraph[A, G, Labelled[String]] {
     def toGraph(parent: NonEmptyList[Labelled[String]], c: A ): G[Labelled[String]] => G[Labelled[String]] = { graph =>
       G.connect( graph )( parent, Leaf( c.show ) )
     }
   }
 }
-trait Magnolia[G[_]] extends Bottom{
+trait Magnolia[G[_]] extends Bottom[G] {
   type Typeclass[T] = ToGraph[T, G, Labelled[String]]
   def connect: Connect[G]
   def combine[T](caseClass: CaseClass[Typeclass, T] ): Typeclass[T] =
@@ -90,9 +90,9 @@ trait Magnolia[G[_]] extends Bottom{
     }
   implicit def gen[T]: Typeclass[T] = macro Magnolia.gen[T]
 }
-trait ToGraphInstances[G[_]] extends Magnolia[G] {
+trait ToGraphGeneric[G[_]] extends Magnolia[G] {
 
-  def create[C, G[_]](
+  def create[C](
       root: String,
       c: C
     )(implicit G: ToGraph[C, G, Labelled.AsString],
@@ -100,7 +100,7 @@ trait ToGraphInstances[G[_]] extends Magnolia[G] {
     ): G[Labelled.AsString] =
     G.toGraph( NonEmptyList.one( Node( root ) ), c )( C.create( Node[String]( root ) ) )
 
-  implicit def option[P, G[_]](
+  implicit def option[P](
       implicit
       T: ToGraph[P, G, Labelled.AsString]
     ): ToGraph[Option[P], G, Labelled.AsString] = new ToGraph[Option[P], G, Labelled.AsString] {
@@ -114,7 +114,7 @@ trait ToGraphInstances[G[_]] extends Magnolia[G] {
       }
     }
   }
-  implicit def listGraph[P, G[_]](
+  implicit def listGraph[P](
       implicit
       T: ToGraph[P, G, Labelled.AsString],
       A: Connect[G]
@@ -130,7 +130,7 @@ trait ToGraphInstances[G[_]] extends Magnolia[G] {
           ._1
     }
   }
-  implicit def mapGraph[K: Ordering, V, G[_]](
+  implicit def mapGraph[K: Ordering, V](
       implicit
       A: Connect[G],
       K: Show[K],
@@ -150,8 +150,4 @@ trait ToGraphInstances[G[_]] extends Magnolia[G] {
         ._1
     }
   }
-}
-
-object ToGraph extends ToGraphInstances[AdjacentGraph] {
-  def connect: Connect[AdjacentGraph] = implicitly[Connect[AdjacentGraph]]
 }

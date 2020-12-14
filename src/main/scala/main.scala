@@ -13,8 +13,8 @@ object Compare {
       A: ToGraph[A, AdjacentGraph, Labelled[String]],
       B: ToGraph[B, AdjacentGraph, Labelled[String]]
     ): AdjacentGraph[Diff[Labelled.AsString]] = {
-    val generatedA = ToGraph.create( "ROOT", a )
-    val generatedB = ToGraph.create( "ROOT", b )
+    val generatedA = AdjacentGraph.create( "ROOT", a )
+    val generatedB = AdjacentGraph.create( "ROOT", b )
     Mismatches.compare( generatedA, generatedB, Node[String]( "-" ) )
   }
 
