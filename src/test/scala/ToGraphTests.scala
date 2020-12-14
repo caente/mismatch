@@ -58,7 +58,12 @@ class ToGraphTests extends AnyFunSuite with TypeCheckedTripleEquals with SymbolI
     case class Foo(i: Int, a: A.type = A )
     val foo = Foo( 1 )
     val generated = AdjacentGraph.create[Foo]( "Foo", foo )
-    println( generated.print )
+    val expected = AdjacentGraph
+      .single( f )
+      .addEdge( f, a )
+      .addEdge( f, i )
+      .addEdge( i, Leaf( "1" ) )
+    assert( generated === expected )
   }
   test( "compare two different classes" ) {
     case class Z(i: Int )
