@@ -17,7 +17,7 @@ libraryDependencies ++= Seq(
   "com.lihaoyi" % "ammonite" % "2.2.0" cross CrossVersion.full,
   "org.scalactic" %% "scalactic" % "3.2.0",
   "org.scalatest" %% "scalatest" % "3.2.0" % "test",
-  "com.propensive" %% "magnolia" % "0.16.0",
+  "com.propensive" %% "magnolia" % "0.17.0",
   "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided
 )
 

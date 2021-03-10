@@ -58,6 +58,9 @@ case class Index[A](i: Int ) extends Labelled[A]
 trait ToGraph[C, G[_], Label] {
   def toGraph(parent: NonEmptyList[Label], c: C ): G[Label] => G[Label]
 }
+object ToGraph {
+  def apply[C, G[_], Label](implicit G: ToGraph[C, G, Label] ) = G
+}
 trait Bottom[G[_]] {
   implicit def fromShow[A](implicit A: Show[A], G: Connect[G] ) = new ToGraph[A, G, Labelled[String]] {
     def toGraph(parent: NonEmptyList[Labelled[String]], c: A ): G[Labelled[String]] => G[Labelled[String]] = { graph =>
@@ -148,6 +151,26 @@ trait ToGraphGeneric[G[_]] extends Magnolia[G] {
             ( V.toGraph( indexLeaf :: parent, c( k ) )( indexed ), index + 1 )
         }
         ._1
+    }
+  }
+  implicit def set[K: Ordering](
+      implicit
+      A: Connect[G],
+      V: ToGraph[K, G, Labelled.AsString]
+    ): ToGraph[Set[K], G, Labelled.AsString] = new ToGraph[Set[K], G, Labelled.AsString] {
+    def toGraph(parent: NonEmptyList[Labelled.AsString], c: Set[K] ): G[Labelled.AsString] => G[Labelled.AsString] = {
+      graph =>
+        ToGraph[List[K], G, Labelled.AsString].toGraph( parent, c.toList.sorted )( graph )
+    }
+  }
+  implicit def vector[K](
+      implicit
+      A: Connect[G],
+      V: ToGraph[K, G, Labelled.AsString]
+    ): ToGraph[Vector[K], G, Labelled.AsString] = new ToGraph[Vector[K], G, Labelled.AsString] {
+    def toGraph(parent: NonEmptyList[Labelled.AsString], c: Vector[K] ): G[Labelled.AsString] => G[Labelled.AsString] = {
+      graph =>
+        ToGraph[List[K], G, Labelled.AsString].toGraph( parent, c.toList )( graph )
     }
   }
 }

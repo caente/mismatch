@@ -14,6 +14,10 @@ import algorithm.Removed
 import scala.annotation.implicitNotFound
 
 object AdjacentGraph extends tograph.ToGraphGeneric[AdjacentGraph] {
+  object ToGraph {
+    def apply[C](implicit C: tograph.ToGraph[C, AdjacentGraph, Labelled[String]] ) = C
+  }
+  type ToGraph[C] = tograph.ToGraph[C, AdjacentGraph, Labelled[String]]
   def single[Label: Eq: Ordering](node: Label ): AdjacentGraph[Label] =
     new AdjacentGraph( node, Map( NonEmptyList.one( node ) -> SortedSet.empty[Label] ) ) {}
 

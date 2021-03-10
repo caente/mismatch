@@ -39,3 +39,4 @@ artifactory_credentials
 .metals/
 project/metals.sbt
 .vscode
+.bsp
